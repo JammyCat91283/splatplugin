@@ -150,7 +150,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         String team = getPlayerTeam(shooter);
 
         if (team.equalsIgnoreCase("none")) return;
-        if (!isAirNearby(hitLoc)) return;
+        if (!isExposedToAir(hitLoc)) return;
 
         Material inkMaterial = getWoolColor(team);
         inkStorage.put(hitLoc, hitLoc.getBlock().getType());
@@ -161,12 +161,18 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     }
 
     private void spreadInk(Location loc, Material inkMaterial) {
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                Location newLoc = loc.clone().add(x, 0, z);
-                if (isAirNearby(newLoc)) {
-                    inkStorage.put(newLoc, newLoc.getBlock().getType());
-                    newLoc.getBlock().setType(inkMaterial);
+        World world = loc.getWorld();
+        
+        for (int x = -2; x <= 2; x++) {
+            for (int y = -2; y <= 2; y++) {
+                for (int z = -2; z <= 2; z++) {
+                    Location newLoc = loc.clone().add(x, y, z);
+                    Material currentBlock = world.getBlockAt(newLoc).getType();
+
+                    if (currentBlock != Material.AIR && isExposedToAir(newLoc) && !inkStorage.containsKey(newLoc)) {
+                        inkStorage.put(newLoc, currentBlock);
+                        world.getBlockAt(newLoc).setType(inkMaterial);
+                    }
                 }
             }
         }
@@ -182,7 +188,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         }
     }
 
-    private boolean isAirNearby(Location loc) {
+    private boolean isExposedToAir(Location loc) {
         World world = loc.getWorld();
         return world.getBlockAt(loc.clone().add(1, 0, 0)).getType() == Material.AIR ||
                world.getBlockAt(loc.clone().add(-1, 0, 0)).getType() == Material.AIR ||
