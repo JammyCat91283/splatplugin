@@ -165,7 +165,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         ItemStack item = player.getInventory().getItemInMainHand();
 
         if (isSplatPluginWeapon(item) == splatterKey.toString()) {
-            event.setCancelled(true);
+            
 
             for (double offsetX : new double[]{-0.5, 0.5}) {
                 for (double offsetY : new double[]{-0.5, 0.5}) {
@@ -181,6 +181,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             }
 
             player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.0f);
+            event.setCancelled(true);
         }
     }
     private void inkBlock(Location loc, Material inkMaterial, String weapon) {
