@@ -139,6 +139,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 player.sendMessage(ChatColor.GREEN + "All ink has been cleared!");
                 return true;
             }
+            return false; // If the command is not recognized, return false to indicate failure
         }
 
     // get command because paper is crying about it returning null
