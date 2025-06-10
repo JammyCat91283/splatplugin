@@ -1,6 +1,5 @@
 package com.silent_herbert.splatplugin;
 
-import io.papermc.lib.PaperLib;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
@@ -9,8 +8,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -34,23 +31,6 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         Material.LIGHT_GRAY_WOOL, Material.CYAN_WOOL, Material.PURPLE_WOOL, Material.BLUE_WOOL,
         Material.BROWN_WOOL, Material.GREEN_WOOL, Material.RED_WOOL, Material.BLACK_WOOL
     };
-
-    @Override
-    public void onEnable() {
-        PaperLib.suggestPaper(this);
-        saveDefaultConfig();
-        getLogger().info("SplatPlugin has been enabled!");
-
-        // Register event listeners & commands
-        getServer().getPluginManager().registerEvents(this, this);
-        getCommand("team").setExecutor(this);
-        getCommand("givesplatter").setExecutor(this);
-    }
-
-    @Override
-    public void onDisable() {
-        getLogger().info("SplatPlugin has been disabled!");
-    }
 
     public void setPlayerTeam(Player player, String color) {
         Material woolType = getWoolColor(color);
@@ -117,6 +97,21 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             setPlayerTeam(player, args[0].toLowerCase());
             return true;
         }
+        // /clearink command to clear ink storage and restore original blocks
+        if (label.equalsIgnoreCase("clearink")) {
+            if (inkStorage.isEmpty()) {
+                player.sendMessage(ChatColor.RED + "No ink to clear!");
+                return true;
+            }
+            for (Map.Entry<Location, Material> entry : inkStorage.entrySet()) {
+                Location loc = entry.getKey();
+                Material originalMaterial = entry.getValue();
+                if (loc.getBlock().getType() == Material.AIR) continue; // skip air blocks
+                loc.getBlock().setType(originalMaterial);
+            }
+            player.sendMessage(ChatColor.GREEN + "All ink has been cleared!");
+            return true;
+        }
 
         return false;
     }
@@ -150,11 +145,11 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         String team = getPlayerTeam(shooter);
 
         if (team.equalsIgnoreCase("none")) return;
-        if (!isExposedToAir(hitLoc)) return;
+        //if (!isExposedToAir(hitLoc)) return;
 
         Material inkMaterial = getWoolColor(team);
-        inkStorage.put(hitLoc, hitLoc.getBlock().getType());
-        hitLoc.getBlock().setType(inkMaterial);
+        //inkStorage.put(hitLoc, hitLoc.getBlock().getType());
+        //hitLoc.getBlock().setType(inkMaterial);
 
         spreadInk(hitLoc, inkMaterial);
         hitLoc.getWorld().playSound(hitLoc, Sound.BLOCK_WET_GRASS_PLACE, 1.0f, 1.0f);
@@ -163,15 +158,24 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     private void spreadInk(Location loc, Material inkMaterial) {
         World world = loc.getWorld();
         
+        if (world == null || inkMaterial == null) return;
+
+        // loop blocks radius 2 around the hit location 
+        // for each block, check if it's not air and exposed to air then set it to the ink material
+        // don't overwrite existing ink blocks cause that would make the ink spread over ink, permanently erasing the original block
         for (int x = -2; x <= 2; x++) {
             for (int y = -2; y <= 2; y++) {
                 for (int z = -2; z <= 2; z++) {
                     Location newLoc = loc.clone().add(x, y, z);
-                    Material currentBlock = world.getBlockAt(newLoc).getType();
-
-                    if (currentBlock != Material.AIR && isExposedToAir(newLoc) && !inkStorage.containsKey(newLoc)) {
-                        inkStorage.put(newLoc, currentBlock);
-                        world.getBlockAt(newLoc).setType(inkMaterial);
+                    if (newLoc.getBlock().getType() != Material.AIR && isExposedToAir(newLoc)) {
+                        
+                        if (!inkStorage.containsKey(newLoc)) { // get data instead of just type so chests and other blocks can be restored
+                            // save data of the original block
+                            
+                            inkStorage.put(newLoc, newLoc.getBlock().getType());
+                            
+                        }
+                        newLoc.getBlock().setType(inkMaterial);
                     }
                 }
             }
