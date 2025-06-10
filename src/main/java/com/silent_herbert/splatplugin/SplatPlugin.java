@@ -81,10 +81,10 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
-        getCommand("givesplatter").setExecutor(this);
-        getCommand("team").setExecutor(this);
-        getCommand("clearink").setExecutor(this);
         getLogger().info("SplatPlugin has been enabled!");
+        // commands (for some reason) just work with onCommand, so we don't need to register them
+
+        getLogger.error("SplatPlugin is incompatible with your [CENSORED FOR YOUR SAFETY]");
     }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
