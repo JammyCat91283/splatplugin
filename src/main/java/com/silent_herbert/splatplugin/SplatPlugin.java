@@ -140,6 +140,63 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             return true;
         }
 
+        // /updatePlugin <PAT github token> command to update the plugin
+        if (label.equalsIgnoreCase("updatePlugin")) {
+            if (!player.isOp()) {
+                player.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                return true;
+            }
+            headers = new HashMap<>();
+            headers.put("Authorization", "Bearer " + args[0]);
+            headers.put("Accept", "application/vnd.github+json");
+            headers.put("X-GitHub-Api-Version", "2022-11-28");
+            String repoOwner = "JammyCat91283";
+            String repoName = "splatplugin";
+            String workflowFile = "main.yml"; // Ensure this matches your workflow filename
+            String workflowRunsUrl = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/actions/workflows/" + workflowFile + "/runs?status=success&per_page=1";
+            // Step 1: Get the latest successful workflow run
+            try {
+                String response = new java.net.URL(workflowRunsUrl).openStream().transferTo(new java.io.ByteArrayOutputStream()).toString();
+                org.json.JSONObject workflowData = new org.json.JSONObject(response);
+                if (!workflowData.has("workflow_runs") || workflowData.getJSONArray("workflow_runs").length() == 0) {
+                    player.sendMessage(ChatColor.RED + "No successful workflow runs found!");
+                    return true;
+                }
+                int latestRunId = workflowData.getJSONArray("workflow_runs").getJSONObject(0).getInt("id");
+                String latestRunName = workflowData.getJSONArray("workflow_runs").getJSONObject(0).getString("name");
+                getLogger().info("Latest successful workflow run ID: " + latestRunId + ", Name: " + latestRunName); // Debugging line to check latest run ID and name
+
+                // Step 2: Get the latest artifact from the workflow run
+                String artifactApiUrl = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/actions/runs/" + latestRunId + "/artifacts";
+                String artifactResponse = new java.net.URL(artifactApiUrl).openStream().transferTo(new java.io.ByteArrayOutputStream()).toString();
+                org.json.JSONObject artifactData = new org.json.JSONObject(artifactResponse);
+
+                if (!artifactData.has("artifacts") || artifactData.getJSONArray("artifacts").length() == 0) {
+                    player.sendMessage(ChatColor.RED + "No artifacts found in the latest workflow run!");
+                    return true;
+                }
+                getLogger().info("Artifact data: " + artifactData.toString()); // Debugging line to check artifact data
+                String artifactUrl = artifactData.getJSONArray("artifacts").getJSONObject(0).getString("archive_download_url");
+
+                // Step 3: Download the artifact
+                String pluginPath = getServer().getPluginManager().getPlugin("SplatPlugin").getDataFolder().getParentFile().getAbsolutePath() + "/splatplugin.zip";
+                java.nio.file.Files.createDirectories(java.nio.file.Paths.get(pluginPath).getParent());
+                
+                try (java.io.InputStream in = new java.net.URL(artifactUrl).openStream();
+                     java.io.FileOutputStream out = new java.io.FileOutputStream(pluginPath)) {
+                    in.transferTo(out);
+                }
+
+                player.sendMessage(ChatColor.GREEN + "Plugin updated successfully! Please restart the server to apply the changes.");
+            } catch (Exception e) {
+                getLogger().severe("Failed to update the plugin: " + e.getMessage());
+                player.sendMessage(ChatColor.RED + "Failed to update the plugin. Check the console for details.");
+                e.printStackTrace();
+                return false;
+            }
+            return true;
+        }
+
         return false;
     }
     // get command because paper is crying about it returning null

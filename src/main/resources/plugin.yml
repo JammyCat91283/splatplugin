@@ -12,3 +12,8 @@ commands:
   clearink:
     description: Clear all ink from the world
     usage: /clearink
+  updatePlugin:
+    description: Update the plugin
+    usage: /updatePlugin <PAT github token>
+    permission: splatplugin.update
+    permission-message: You do not have permission to use this command!
