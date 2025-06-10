@@ -21,6 +21,8 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.HashMap;
 import java.util.Map;
 import org.bukkit.util.Vector;
+// plugin command
+import org.bukkit.command.PluginCommand;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -141,10 +143,14 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         return false;
     }
     // get command because paper is crying about it returning null
-    public Command getCommand(String name) {
-        Command command = super.getCommand(name);
+    public PluginCommand getCommand(String name) {
+        PluginCommand command = super.getCommand(name);
         if (command == null) {
-            getLogger().warning("Command '" + name + "' not found!");
+            command = getServer().getPluginCommand(name);
+            if (command == null) {
+                getLogger().warning("Command '" + name + "' not found!");
+                return null;
+            }
         }
         return command;
     }
