@@ -8,7 +8,8 @@ plugins {
     id 'java'
 }
 
-group = "com.crimsonwarpedcraft.exampleplugin"
+group = "com.silent_herbert.splatplugin"
+version = "1.0.0-SNAPSHOT"
 
 static def getTime() {
     SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd-HHmm")
