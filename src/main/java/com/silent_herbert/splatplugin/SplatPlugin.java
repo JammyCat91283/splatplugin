@@ -153,7 +153,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        if (isSplatPluginWeapon(item) == splatterKey) {
+        if (isSplatPluginWeapon(item) == splatterKey.toString()) {
             event.setCancelled(true);
 
             for (double offsetX : new double[]{-0.5, 0.5}) {
@@ -162,7 +162,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                         Vector direction = player.getLocation().getDirection().clone();
                         direction.add(new Vector(offsetX, offsetY, offsetZ)).normalize().multiply(1.5);
                         Snowball inkShot = player.launchProjectile(Snowball.class, direction);
-                        inkShot.setCustomName("splatplugin-splatterink");
+                        inkShot.setCustomName(splatterInkKey.toString());
                         inkShot.setCustomNameVisible(false);
                         inkShot.setShooter(player);
                     }
@@ -179,7 +179,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         // Save the original block type if not already stored
         
         // if weapon = splatterKey, then if a ink hits a same team ink block, it will randomly go around until it finds a block that is not inked same.
-        if (weapon.equals("splatplugin-splatterink")) {
+        if (weapon.equals(splatterInkKey.toString())) {
             // Check if the block is already inked with the same color
             if (loc.getBlock().getType() == inkMaterial) {
                 // start searching for a nearby block that is not inked with the same color
