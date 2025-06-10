@@ -140,7 +140,14 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
 
         return false;
     }
-
+    // get command because paper is crying about it returning null
+    public Command getCommand(String name) {
+        Command command = super.getCommand(name);
+        if (command == null) {
+            getLogger().warning("Command '" + name + "' not found!");
+        }
+        return command;
+    }
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();

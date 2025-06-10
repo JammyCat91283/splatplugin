@@ -1,6 +1,6 @@
 name: SplatPlugin
 main: com.silent_herbert.splatplugin.SplatPlugin
-version: 1.0
+version: 1.5
 api-version: 1.20
 commands:
   team:
@@ -9,3 +9,6 @@ commands:
   givesplatter:
     description: Get The Splatter weapon
     usage: /givesplatter
+  clearink:
+    description: Clear all ink from the world
+    usage: /clearink
