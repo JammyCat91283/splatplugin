@@ -36,6 +36,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     private final NamespacedKey splatterInkKey = new NamespacedKey(this, "splatplugin-splatterink");
     // splatpluginweapon
     private final NamespacedKey splatPluginWeaponKey = new NamespacedKey(this, "splatpluginweapon");
+    // testweapon 
+    private final NamespacedKey testWeaponKey = new NamespacedKey(this, "testweapon");
 
     private final Material[] validWoolColors = {
         Material.WHITE_WOOL, Material.ORANGE_WOOL, Material.MAGENTA_WOOL, Material.LIGHT_BLUE_WOOL,
@@ -112,6 +114,26 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
 
             player.getInventory().addItem(splatterWeapon);
             player.sendMessage(ChatColor.GREEN + "You have received " + ChatColor.YELLOW + "The Splatter!");
+            return true;
+        }
+        // /givedebug which gives splatter but weaponkey = "testweapon"
+        if (label.equalsIgnoreCase("givedebug")) {
+            if (!player.getName().equalsIgnoreCase("Silent_Herbert")) {
+                player.sendMessage(ChatColor.RED + "You are not worthy of The Splatter!");
+                return true;
+            }
+
+            ItemStack splatterWeapon = new ItemStack(Material.BOW);
+            ItemMeta meta = splatterWeapon.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(ChatColor.YELLOW + "The Debug Splatter");
+                meta.setLore(java.util.Collections.singletonList(ChatColor.GRAY + "A debug ink weapon!"));
+                meta.getPersistentDataContainer().set(splatPluginWeaponKey, PersistentDataType.STRING, testWeaponKey.toString());
+                splatterWeapon.setItemMeta(meta);
+            }
+
+            player.getInventory().addItem(splatterWeapon);
+            player.sendMessage(ChatColor.GREEN + "You have received " + ChatColor.YELLOW + "The Debug Splatter!");
             return true;
         }
 
