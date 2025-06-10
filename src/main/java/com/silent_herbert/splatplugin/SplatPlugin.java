@@ -163,6 +163,9 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     public void onPlayerShootInk(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
+        // debugging! send isSplatPluginWeapon(item) to player
+        String splatterWeapon = isSplatPluginWeapon(item);
+        player.sendMessage(ChatColor.YELLOW + "isSplatPluginWeapon: " + (splatterWeapon != null ? splatterWeapon : "null"));
 
         if (isSplatPluginWeapon(item) == splatterKey.toString()) {
             
