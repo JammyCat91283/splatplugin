@@ -15,6 +15,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -59,7 +61,14 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         if (item == null || item.getItemMeta() == null) return false;
         return item.getItemMeta().getPersistentDataContainer().has(splatterKey, PersistentDataType.STRING);
     }
-
+    @Override
+    public void onEnable() {
+        getServer().getPluginManager().registerEvents(this, this);
+        getCommand("givesplatter").setExecutor(this);
+        getCommand("team").setExecutor(this);
+        getCommand("clearink").setExecutor(this);
+        getLogger().info("SplatPlugin has been enabled!");
+    }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
@@ -75,7 +84,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 return true;
             }
 
-            ItemStack splatterWeapon = new ItemStack(Material.BOW);
+            ItemStack splatterWeapon = new ItemStack(Material.BLAZE_ROD);
             ItemMeta meta = splatterWeapon.getItemMeta();
             if (meta != null) {
                 meta.setDisplayName(ChatColor.YELLOW + "The Splatter");
@@ -117,6 +126,11 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     }
 
     @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        player.sendMessage(ChatColor.GREEN + "Welcome to SplatPlugin! Use /team <color> to join a team.");
+    }
+    @EventHandler
     public void onPlayerShootInk(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
@@ -124,14 +138,65 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         if (isSplatterWeapon(item)) {
             event.setCancelled(true);
 
-            Snowball inkShot = player.launchProjectile(Snowball.class);
-            inkShot.setVelocity(player.getLocation().getDirection().multiply(1.5));
-            inkShot.setCustomName("SPLATTER_SHOT");
+            for (double offsetX : new double[]{-0.5, 0.5}) {
+                for (double offsetY : new double[]{-0.5, 0.5}) {
+                    for (double offsetZ : new double[]{-0.5, 0.5}) {
+                        Vector direction = player.getLocation().getDirection().clone();
+                        direction.add(new Vector(offsetX, offsetY, offsetZ)).normalize().multiply(1.5);
+                        Snowball inkShot = player.launchProjectile(Snowball.class, direction);
+                        inkShot.setCustomName("SPLATTER_SHOT");
+                    }
+                }
+            }
 
             player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.0f);
         }
     }
+    private void inkBlock(Location loc, Material inkMaterial, weapon String) {
+        if (loc == null || inkMaterial == null) return;
+        // Abort if the block is already air
+        if (loc.getBlock().getType() == Material.AIR) return;
+        // Save the original block type if not already stored
+        
+        // if weapon = splatterKey, then if a ink hits a same team ink block, it will randomly go around until it finds a block that is not inked same.
+        if (weapon.equals("splatterKey")) {
+            // Check if the block is already inked with the same color
+            if (loc.getBlock().getType() == inkMaterial) {
+                // start searching for a nearby block that is not inked with the same color
+                // but don't go too far, just check for a length of 3 blocks around it (this is called a nerf)
+                // so like this: start from the current location and then do a random move and make count + 1. if count > 3, then restart
+                // do this a max of 3 times before giving up
+                int count = 0;
+                while (count < 3) {
+                    int x = (int) (Math.random() * 3) - 1; // Randomly choose -1, 0, or 1
+                    int y = (int) (Math.random() * 3) - 1;
+                    int z = (int) (Math.random() * 3) - 1;
+                    Location newLoc = loc.clone().add(x, y, z);
+                    
+                    if (newLoc.getBlock().getType() != inkMaterial && newLoc.getBlock().getType() != Material.AIR) {
+                        // Save the original block type if not already stored
+                        if (!inkStorage.containsKey(newLoc)) {
+                            inkStorage.put(newLoc, newLoc.getBlock().getType());
+                        }
+                        // Set the block to the ink material
+                        newLoc.getBlock().setType(inkMaterial);
+                        return; // Exit after successfully inking a different block
+                    }
+                    count++;
+                }
+                // If we reach here, it means we couldn't find a suitable block to ink
+                loc.getBlock().setType(inkMaterial); // Fallback to inking the original block
 
+            } else {
+                // Save the original block type if not already stored
+                if (!inkStorage.containsKey(loc)) {
+                    inkStorage.put(loc, loc.getBlock().getType());
+                }
+                // Set the block to the ink material
+                loc.getBlock().setType(inkMaterial);
+            }
+        }
+    }
     @EventHandler
     public void onInkHitBlock(ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof Snowball)) return;
@@ -148,10 +213,9 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         //if (!isExposedToAir(hitLoc)) return;
 
         Material inkMaterial = getWoolColor(team);
-        //inkStorage.put(hitLoc, hitLoc.getBlock().getType());
-        //hitLoc.getBlock().setType(inkMaterial);
+        inkBlock(hitLoc, inkMaterial);
 
-        spreadInk(hitLoc, inkMaterial);
+        // spreadInk(hitLoc, inkMaterial); nvm i just had the best idea ever
         hitLoc.getWorld().playSound(hitLoc, Sound.BLOCK_WET_GRASS_PLACE, 1.0f, 1.0f);
     }
 
@@ -200,5 +264,39 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                world.getBlockAt(loc.clone().add(0, -1, 0)).getType() == Material.AIR ||
                world.getBlockAt(loc.clone().add(0, 0, 1)).getType() == Material.AIR ||
                world.getBlockAt(loc.clone().add(0, 0, -1)).getType() == Material.AIR;
+    }
+    // Ink Mechanics (Movement Boosts & Slowdowns)
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        String team = getPlayerTeam(player);
+        Material below = player.getLocation().getBlock().getType();
+
+        if (team.equalsIgnoreCase("none")) return;
+
+        Material teamWool = getWoolColor(team);
+        if (teamWool != null && below == teamWool) {
+            player.setWalkSpeed(0.4f);
+        } else if (below.toString().endsWith("_WOOL")) {
+            player.setWalkSpeed(0.1f);
+        } else {
+            player.setWalkSpeed(0.2f);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerSneak(PlayerToggleSneakEvent event) {
+        Player player = event.getPlayer();
+        String team = getPlayerTeam(player);
+        Material below = player.getLocation().getBlock().getType();
+
+        if (team.equalsIgnoreCase("none")) return;
+        if (!event.isSneaking()) return;
+
+        Material teamWool = getWoolColor(team);
+        if (teamWool != null && below == teamWool) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 10, 9));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10, 0, true, false));
+        }
     }
 }
