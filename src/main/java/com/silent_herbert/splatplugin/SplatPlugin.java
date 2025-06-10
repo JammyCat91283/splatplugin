@@ -101,7 +101,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 return true;
             }
 
-            ItemStack splatterWeapon = new ItemStack(Material.BLAZE_ROD);
+            ItemStack splatterWeapon = new ItemStack(Material.BOW);
             ItemMeta meta = splatterWeapon.getItemMeta();
             if (meta != null) {
                 meta.setDisplayName(ChatColor.YELLOW + "The Splatter");
@@ -146,7 +146,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 player.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                 return true;
             }
-            headers = new HashMap<>();
+            Map<String, String> headers = new HashMap<>();
             headers.put("Authorization", "Bearer " + args[0]);
             headers.put("Accept", "application/vnd.github+json");
             headers.put("X-GitHub-Api-Version", "2022-11-28");
@@ -156,7 +156,9 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             String workflowRunsUrl = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/actions/workflows/" + workflowFile + "/runs?status=success&per_page=1";
             // Step 1: Get the latest successful workflow run
             try {
-                String response = new java.net.URL(workflowRunsUrl).openStream().transferTo(new java.io.ByteArrayOutputStream()).toString();
+                java.io.ByteArrayOutputStream baos1 = new java.io.ByteArrayOutputStream();
+                new java.net.URL(workflowRunsUrl).openStream().transferTo(baos1);
+                String response = baos1.toString();
                 org.json.JSONObject workflowData = new org.json.JSONObject(response);
                 if (!workflowData.has("workflow_runs") || workflowData.getJSONArray("workflow_runs").length() == 0) {
                     player.sendMessage(ChatColor.RED + "No successful workflow runs found!");
@@ -166,8 +168,10 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 String latestRunName = workflowData.getJSONArray("workflow_runs").getJSONObject(0).getString("name");
                 getLogger().info("Latest successful workflow run ID: " + latestRunId + ", Name: " + latestRunName); // Debugging line to check latest run ID and name
 
-                // Step 2: Get the latest artifact from the workflow run
-                String artifactApiUrl = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/actions/runs/" + latestRunId + "/artifacts";
+                java.io.ByteArrayOutputStream baos2 = new java.io.ByteArrayOutputStream();
+                new java.net.URL(artifactApiUrl).openStream().transferTo(baos2);
+                String artifactResponse = baos2.toString();
+                org.json.JSONObject artifactData = new org.json.JSONObject(artifactResponse);
                 String artifactResponse = new java.net.URL(artifactApiUrl).openStream().transferTo(new java.io.ByteArrayOutputStream()).toString();
                 org.json.JSONObject artifactData = new org.json.JSONObject(artifactResponse);
 
