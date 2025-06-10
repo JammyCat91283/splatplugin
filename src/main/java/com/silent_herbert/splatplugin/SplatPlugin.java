@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -17,9 +18,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +25,15 @@ import java.util.Map;
 public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor {
 
     private final Map<Player, String> playerTeams = new HashMap<>();
+    private final Map<Location, Material> inkStorage = new HashMap<>();
     private final NamespacedKey splatterKey = new NamespacedKey(this, "splatterweapon");
+
+    private final Material[] validWoolColors = {
+        Material.WHITE_WOOL, Material.ORANGE_WOOL, Material.MAGENTA_WOOL, Material.LIGHT_BLUE_WOOL,
+        Material.YELLOW_WOOL, Material.LIME_WOOL, Material.PINK_WOOL, Material.GRAY_WOOL,
+        Material.LIGHT_GRAY_WOOL, Material.CYAN_WOOL, Material.PURPLE_WOOL, Material.BLUE_WOOL,
+        Material.BROWN_WOOL, Material.GREEN_WOOL, Material.RED_WOOL, Material.BLACK_WOOL
+    };
 
     @Override
     public void onEnable() {
@@ -47,12 +53,26 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     }
 
     public void setPlayerTeam(Player player, String color) {
+        Material woolType = getWoolColor(color);
+        if (woolType == null) {
+            player.sendMessage(ChatColor.RED + "Invalid team! Choose a valid wool color.");
+            return;
+        }
         playerTeams.put(player, color);
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aYou joined the " + color + " team!"));
+        player.sendMessage(ChatColor.GREEN + "You joined the " + ChatColor.BOLD + color + " team!");
     }
 
     public String getPlayerTeam(Player player) {
         return playerTeams.getOrDefault(player, "none");
+    }
+
+    public Material getWoolColor(String color) {
+        for (Material wool : validWoolColors) {
+            if (wool.name().toLowerCase().contains(color)) {
+                return wool;
+            }
+        }
+        return null;
     }
 
     public boolean isSplatterWeapon(ItemStack item) {
@@ -60,7 +80,6 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         return item.getItemMeta().getPersistentDataContainer().has(splatterKey, PersistentDataType.STRING);
     }
 
-    // Command to give The Splatter weapon (Only Silent_Herbert)
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
@@ -71,18 +90,16 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         Player player = (Player) sender;
 
         if (label.equalsIgnoreCase("givesplatter")) {
-            // Restrict command usage to Silent_Herbert
             if (!player.getName().equalsIgnoreCase("Silent_Herbert")) {
                 player.sendMessage(ChatColor.RED + "You are not worthy of The Splatter!");
                 return true;
             }
 
-            // Create the Splatter weapon (Bow)
             ItemStack splatterWeapon = new ItemStack(Material.BOW);
             ItemMeta meta = splatterWeapon.getItemMeta();
             if (meta != null) {
-                meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&eThe Splatter"));
-                meta.getPersistentDataContainer().set(splatterKey, PersistentDataType.STRING, "true"); // Custom NBT tag
+                meta.setDisplayName(ChatColor.YELLOW + "The Splatter");
+                meta.getPersistentDataContainer().set(splatterKey, PersistentDataType.STRING, "true");
                 splatterWeapon.setItemMeta(meta);
             }
 
@@ -97,15 +114,13 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 return true;
             }
 
-            String color = args[0].toLowerCase();
-            setPlayerTeam(player, color);
+            setPlayerTeam(player, args[0].toLowerCase());
             return true;
         }
 
         return false;
     }
 
-    // Detect right-click to shoot ink
     @EventHandler
     public void onPlayerShootInk(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -114,7 +129,6 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         if (isSplatterWeapon(item)) {
             event.setCancelled(true);
 
-            // Shoot The Splatter's ink shot
             Snowball inkShot = player.launchProjectile(Snowball.class);
             inkShot.setVelocity(player.getLocation().getDirection().multiply(1.5));
             inkShot.setCustomName("SPLATTER_SHOT");
@@ -123,7 +137,6 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         }
     }
 
-    // Detect ink hitting a block
     @EventHandler
     public void onInkHitBlock(ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof Snowball)) return;
@@ -137,12 +150,36 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         String team = getPlayerTeam(shooter);
 
         if (team.equalsIgnoreCase("none")) return;
-
         if (!isAirNearby(hitLoc)) return;
 
-        Material inkMaterial = team.equalsIgnoreCase("blue") ? Material.BLUE_WOOL : Material.ORANGE_WOOL;
+        Material inkMaterial = getWoolColor(team);
+        inkStorage.put(hitLoc, hitLoc.getBlock().getType());
         hitLoc.getBlock().setType(inkMaterial);
+
+        spreadInk(hitLoc, inkMaterial);
         hitLoc.getWorld().playSound(hitLoc, Sound.BLOCK_WET_GRASS_PLACE, 1.0f, 1.0f);
+    }
+
+    private void spreadInk(Location loc, Material inkMaterial) {
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                Location newLoc = loc.clone().add(x, 0, z);
+                if (isAirNearby(newLoc)) {
+                    inkStorage.put(newLoc, newLoc.getBlock().getType());
+                    newLoc.getBlock().setType(inkMaterial);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        Location loc = event.getBlock().getLocation();
+        if (inkStorage.containsKey(loc)) {
+            event.setCancelled(true);
+            event.getBlock().setType(inkStorage.get(loc));
+            inkStorage.remove(loc);
+        }
     }
 
     private boolean isAirNearby(Location loc) {
@@ -153,41 +190,5 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                world.getBlockAt(loc.clone().add(0, -1, 0)).getType() == Material.AIR ||
                world.getBlockAt(loc.clone().add(0, 0, 1)).getType() == Material.AIR ||
                world.getBlockAt(loc.clone().add(0, 0, -1)).getType() == Material.AIR;
-    }
-
-    // Ink Mechanics (Movement Boosts & Slowdowns)
-    @EventHandler
-    public void onPlayerMove(PlayerMoveEvent event) {
-        Player player = event.getPlayer();
-        String team = getPlayerTeam(player);
-        Material below = player.getLocation().getBlock().getType();
-
-        if (team.equalsIgnoreCase("none")) return;
-
-        if (below == Material.ORANGE_WOOL && team.equalsIgnoreCase("orange") ||
-            below == Material.BLUE_WOOL && team.equalsIgnoreCase("blue")) {
-            player.setWalkSpeed(0.4f);
-        } else if (below == Material.ORANGE_WOOL && team.equalsIgnoreCase("blue") ||
-                   below == Material.BLUE_WOOL && team.equalsIgnoreCase("orange")) {
-            player.setWalkSpeed(0.1f);
-        } else {
-            player.setWalkSpeed(0.2f);
-        }
-    }
-
-    @EventHandler
-    public void onPlayerSneak(PlayerToggleSneakEvent event) {
-        Player player = event.getPlayer();
-        String team = getPlayerTeam(player);
-        Material below = player.getLocation().getBlock().getType();
-
-        if (team.equalsIgnoreCase("none")) return;
-        if (!event.isSneaking()) return;
-
-        if ((below == Material.ORANGE_WOOL && team.equalsIgnoreCase("orange")) ||
-            (below == Material.BLUE_WOOL && team.equalsIgnoreCase("blue"))) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 10, 9));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10, 0, true, false));
-        }
     }
 }
