@@ -83,8 +83,6 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         getServer().getPluginManager().registerEvents(this, this);
         getLogger().info("SplatPlugin has been enabled!");
         // commands (for some reason) just work with onCommand, so we don't need to register them
-
-        getLogger.error("SplatPlugin is incompatible with your [CENSORED FOR YOUR SAFETY]");
     }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
