@@ -20,12 +20,20 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.bukkit.util.Vector;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 
 public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor {
 
     private final Map<Player, String> playerTeams = new HashMap<>();
     private final Map<Location, Material> inkStorage = new HashMap<>();
     private final NamespacedKey splatterKey = new NamespacedKey(this, "splatterweapon");
+    // splatplugin-splatterink is the key for the splatter weapon ink
+    private final NamespacedKey splatterInkKey = new NamespacedKey(this, "splatplugin-splatterink");
+    // splatpluginweapon
+    private final NamespacedKey splatPluginWeaponKey = new NamespacedKey(this, "splatpluginweapon");
 
     private final Material[] validWoolColors = {
         Material.WHITE_WOOL, Material.ORANGE_WOOL, Material.MAGENTA_WOOL, Material.LIGHT_BLUE_WOOL,
@@ -57,9 +65,18 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         return null;
     }
 
-    public boolean isSplatterWeapon(ItemStack item) {
-        if (item == null || item.getItemMeta() == null) return false;
-        return item.getItemMeta().getPersistentDataContainer().has(splatterKey, PersistentDataType.STRING);
+    public String isSplatPluginWeapon(ItemStack item) {
+        if (item == null || item.getItemMeta() == null) {
+            return null;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta.getPersistentDataContainer().has(splatPluginWeaponKey, PersistentDataType.STRING)) {
+            String weaponType = meta.getPersistentDataContainer().get(splatPluginWeaponKey, PersistentDataType.STRING);
+            if (weaponType != null) {
+                return weaponType;
+            }
+        }
+        return null;
     }
     @Override
     public void onEnable() {
@@ -88,7 +105,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             ItemMeta meta = splatterWeapon.getItemMeta();
             if (meta != null) {
                 meta.setDisplayName(ChatColor.YELLOW + "The Splatter");
-                meta.getPersistentDataContainer().set(splatterKey, PersistentDataType.STRING, "true");
+                meta.setLore(java.util.Collections.singletonList(ChatColor.GRAY + "A powerful ink weapon!"));
+                meta.getPersistentDataContainer().set(splatPluginWeaponKey, PersistentDataType.STRING, splatterKey.toString());
                 splatterWeapon.setItemMeta(meta);
             }
 
@@ -135,7 +153,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        if (isSplatterWeapon(item)) {
+        if (isSplatPluginWeapon(item) == splatterKey) {
             event.setCancelled(true);
 
             for (double offsetX : new double[]{-0.5, 0.5}) {
@@ -144,7 +162,9 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                         Vector direction = player.getLocation().getDirection().clone();
                         direction.add(new Vector(offsetX, offsetY, offsetZ)).normalize().multiply(1.5);
                         Snowball inkShot = player.launchProjectile(Snowball.class, direction);
-                        inkShot.setCustomName("SPLATTER_SHOT");
+                        inkShot.setCustomName("splatplugin-splatterink");
+                        inkShot.setCustomNameVisible(false);
+                        inkShot.setShooter(player);
                     }
                 }
             }
@@ -152,14 +172,14 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.0f);
         }
     }
-    private void inkBlock(Location loc, Material inkMaterial, weapon String) {
+    private void inkBlock(Location loc, Material inkMaterial, String weapon) {
         if (loc == null || inkMaterial == null) return;
         // Abort if the block is already air
         if (loc.getBlock().getType() == Material.AIR) return;
         // Save the original block type if not already stored
         
         // if weapon = splatterKey, then if a ink hits a same team ink block, it will randomly go around until it finds a block that is not inked same.
-        if (weapon.equals("splatterKey")) {
+        if (weapon.equals("splatplugin-splatterink")) {
             // Check if the block is already inked with the same color
             if (loc.getBlock().getType() == inkMaterial) {
                 // start searching for a nearby block that is not inked with the same color
@@ -202,7 +222,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         if (!(event.getEntity() instanceof Snowball)) return;
         Snowball inkShot = (Snowball) event.getEntity();
 
-        if (!"SPLATTER_SHOT".equals(inkShot.getCustomName())) return;
+        if (inkShot.getCustomName() == null || !inkShot.getCustomName().startsWith("splatplugin-")) return;
         if (!(inkShot.getShooter() instanceof Player)) return;
 
         Player shooter = (Player) inkShot.getShooter();
@@ -213,7 +233,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         //if (!isExposedToAir(hitLoc)) return;
 
         Material inkMaterial = getWoolColor(team);
-        inkBlock(hitLoc, inkMaterial);
+        inkBlock(hitLoc, inkMaterial, inkShot.getCustomName());
 
         // spreadInk(hitLoc, inkMaterial); nvm i just had the best idea ever
         hitLoc.getWorld().playSound(hitLoc, Sound.BLOCK_WET_GRASS_PLACE, 1.0f, 1.0f);
