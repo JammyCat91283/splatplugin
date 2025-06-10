@@ -9,7 +9,7 @@ A template for building PaperMC/Spigot Minecraft server plugins!
 
 ## Features
 ### Github Actions 🎬
-* Automated builds, testing, and release drafting
+* Automated builds, testing, and release drafting NOW BUILD
 * [Discord notifcations](https://github.com/marketplace/actions/discord-message-notify) for snapshots and releases
 
 ### Bots 🤖
