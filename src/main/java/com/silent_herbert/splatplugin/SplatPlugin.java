@@ -125,19 +125,20 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             return true;
         }
         // /clearink command to clear ink storage and restore original blocks
-        if (label.equalsIgnoreCase("clearink")) {
-            if (inkStorage.isEmpty()) {
-                player.sendMessage(ChatColor.RED + "No ink to clear!");
+            if (label.equalsIgnoreCase("clearink")) {
+                if (inkStorage.isEmpty()) {
+                    player.sendMessage(ChatColor.RED + "No ink to clear!");
+                    return true;
+                }
+                for (Map.Entry<Location, Material> entry : inkStorage.entrySet()) {
+                    Location loc = entry.getKey();
+                    Material originalMaterial = entry.getValue();
+                    if (loc.getBlock().getType() == Material.AIR) continue; // skip air blocks
+                    loc.getBlock().setType(originalMaterial);
+                }
+                player.sendMessage(ChatColor.GREEN + "All ink has been cleared!");
                 return true;
             }
-            for (Map.Entry<Location, Material> entry : inkStorage.entrySet()) {
-                Location loc = entry.getKey();
-                Material originalMaterial = entry.getValue();
-                if (loc.getBlock().getType() == Material.AIR) continue; // skip air blocks
-                loc.getBlock().setType(originalMaterial);
-            }
-            player.sendMessage(ChatColor.GREEN + "All ink has been cleared!");
-            return true;
         }
 
     // get command because paper is crying about it returning null
