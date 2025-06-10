@@ -1,14 +1,15 @@
 package com.silent_herbert.splatplugin;
 
 import io.papermc.lib.PaperLib;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -20,7 +21,7 @@ import org.bukkit.command.CommandSender;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SplatPlugin extends JavaPlugin {
+public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor {
 
     private final Map<Player, String> playerTeams = new HashMap<>();
     private final NamespacedKey splatterKey = new NamespacedKey(this, "splatterweapon");
@@ -32,10 +33,9 @@ public class SplatPlugin extends JavaPlugin {
         getLogger().info("SplatPlugin has been enabled!");
 
         // Register event listeners & commands
-        getServer().getPluginManager().registerEvents(new InkMechanics(this), this);
-        getServer().getPluginManager().registerEvents(new InkShooting(this), this);
-        getCommand("team").setExecutor(new TeamCommand(this));
-        getCommand("givesplatter").setExecutor(new GiveSplatterCommand(this));
+        getServer().getPluginManager().registerEvents(this, this);
+        getCommand("team").setExecutor(this);
+        getCommand("givesplatter").setExecutor(this);
     }
 
     @Override
@@ -56,18 +56,8 @@ public class SplatPlugin extends JavaPlugin {
         if (item == null || item.getItemMeta() == null) return false;
         return item.getItemMeta().getPersistentDataContainer().has(splatterKey, PersistentDataType.STRING);
     }
-}
 
-// Command to give The Splatter weapon (Only Silent_Herbert)
-class GiveSplatterCommand implements CommandExecutor {
-    private final SplatPlugin plugin;
-    private final NamespacedKey splatterKey;
-
-    public GiveSplatterCommand(SplatPlugin plugin) {
-        this.plugin = plugin;
-        this.splatterKey = new NamespacedKey(plugin, "splatterweapon");
-    }
-
+    // Command to give The Splatter weapon (Only Silent_Herbert)
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
@@ -77,60 +67,39 @@ class GiveSplatterCommand implements CommandExecutor {
 
         Player player = (Player) sender;
 
-        // Restrict command usage to Silent_Herbert
-        if (!player.getName().equalsIgnoreCase("Silent_Herbert")) {
-            player.sendMessage(ChatColor.RED + "You are not worthy of The Splatter!");
+        if (label.equalsIgnoreCase("givesplatter")) {
+            // Restrict command usage to Silent_Herbert
+            if (!player.getName().equalsIgnoreCase("Silent_Herbert")) {
+                player.sendMessage(ChatColor.RED + "You are not worthy of The Splatter!");
+                return true;
+            }
+
+            // Create the Splatter weapon (Bow)
+            ItemStack splatterWeapon = new ItemStack(Material.BOW);
+            ItemMeta meta = splatterWeapon.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&eThe Splatter"));
+                meta.getPersistentDataContainer().set(splatterKey, PersistentDataType.STRING, "true"); // Custom NBT tag
+                splatterWeapon.setItemMeta(meta);
+            }
+
+            player.getInventory().addItem(splatterWeapon);
+            player.sendMessage(ChatColor.GREEN + "You have received " + ChatColor.YELLOW + "The Splatter!");
             return true;
         }
 
-        // Create the Splatter weapon (Bow)
-        ItemStack splatterWeapon = new ItemStack(Material.BOW);
-        ItemMeta meta = splatterWeapon.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&eThe Splatter"));
-            meta.getPersistentDataContainer().set(splatterKey, PersistentDataType.STRING, "true"); // Custom NBT tag
-            splatterWeapon.setItemMeta(meta);
-        }
+        if (label.equalsIgnoreCase("team")) {
+            if (args.length < 1) {
+                player.sendMessage(ChatColor.RED + "Usage: /team <color>");
+                return true;
+            }
 
-        player.getInventory().addItem(splatterWeapon);
-        player.sendMessage(ChatColor.GREEN + "You have received " + ChatColor.YELLOW + "The Splatter!");
-        return true;
-    }
-}
-
-// Command to change team to any color
-class TeamCommand implements CommandExecutor {
-    private final SplatPlugin plugin;
-
-    public TeamCommand(SplatPlugin plugin) {
-        this.plugin = plugin;
-    }
-
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("Only players can use this command!");
+            String color = args[0].toLowerCase();
+            setPlayerTeam(player, color);
             return true;
         }
 
-        Player player = (Player) sender;
-        if (args.length < 1) {
-            player.sendMessage(ChatColor.RED + "Usage: /team <color>");
-            return true;
-        }
-
-        String color = args[0].toLowerCase();
-        plugin.setPlayerTeam(player, color);
-        return true;
-    }
-}
-
-// Ink Shooting Mechanics (Different Weapons & Projectile Handling)
-class InkShooting implements Listener {
-    private final SplatPlugin plugin;
-
-    public InkShooting(SplatPlugin plugin) {
-        this.plugin = plugin;
+        return false;
     }
 
     // Detect right-click to shoot ink
@@ -139,14 +108,14 @@ class InkShooting implements Listener {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        if (plugin.isSplatterWeapon(item)) {
+        if (isSplatterWeapon(item)) {
             event.setCancelled(true);
-            
+
             // Shoot The Splatter's ink shot
             Snowball inkShot = player.launchProjectile(Snowball.class);
             inkShot.setVelocity(player.getLocation().getDirection().multiply(1.5));
-            inkShot.setCustomName("SPLATTER_SHOT"); // Identifies it as The Splatter's shot
-            
+            inkShot.setCustomName("SPLATTER_SHOT");
+
             player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.0f);
         }
     }
@@ -162,11 +131,10 @@ class InkShooting implements Listener {
 
         Player shooter = (Player) inkShot.getShooter();
         Location hitLoc = event.getHitBlock().getLocation();
-        String team = plugin.getPlayerTeam(shooter);
+        String team = getPlayerTeam(shooter);
 
         if (team.equalsIgnoreCase("none")) return;
 
-        // Check surrounding air blocks to ensure proper ink placement
         if (!isAirNearby(hitLoc)) return;
 
         Material inkMaterial = team.equalsIgnoreCase("blue") ? Material.BLUE_WOOL : Material.ORANGE_WOOL;
@@ -182,5 +150,41 @@ class InkShooting implements Listener {
                world.getBlockAt(loc.clone().add(0, -1, 0)).getType() == Material.AIR ||
                world.getBlockAt(loc.clone().add(0, 0, 1)).getType() == Material.AIR ||
                world.getBlockAt(loc.clone().add(0, 0, -1)).getType() == Material.AIR;
+    }
+
+    // Ink Mechanics (Movement Boosts & Slowdowns)
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        String team = getPlayerTeam(player);
+        Material below = player.getLocation().getBlock().getType();
+
+        if (team.equalsIgnoreCase("none")) return;
+
+        if (below == Material.ORANGE_WOOL && team.equalsIgnoreCase("orange") ||
+            below == Material.BLUE_WOOL && team.equalsIgnoreCase("blue")) {
+            player.setWalkSpeed(0.4f);
+        } else if (below == Material.ORANGE_WOOL && team.equalsIgnoreCase("blue") ||
+                   below == Material.BLUE_WOOL && team.equalsIgnoreCase("orange")) {
+            player.setWalkSpeed(0.1f);
+        } else {
+            player.setWalkSpeed(0.2f);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerSneak(PlayerToggleSneakEvent event) {
+        Player player = event.getPlayer();
+        String team = getPlayerTeam(player);
+        Material below = player.getLocation().getBlock().getType();
+
+        if (team.equalsIgnoreCase("none")) return;
+        if (!event.isSneaking()) return;
+
+        if ((below == Material.ORANGE_WOOL && team.equalsIgnoreCase("orange")) ||
+            (below == Material.BLUE_WOOL && team.equalsIgnoreCase("blue"))) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 10, 9));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10, 0, true, false));
+        }
     }
 }
