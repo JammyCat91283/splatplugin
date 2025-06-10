@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.silent_herbert.splatplugin"
-version = "1.0.1-SNAPSHOT"
+version = "1.1.0-SNAPSHOT"
 
 static def getTime() {
     SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd-HHmm")
@@ -64,9 +64,9 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'io.papermc.paper:paper-api:1.21.5-R0.1-SNAPSHOT'
+    compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
     implementation 'io.papermc:paperlib:1.0.8'
-    testImplementation 'io.papermc.paper:paper-api:1.21.5-R0.1-SNAPSHOT'
+    testImplementation 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.13.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.13.0'
 }
