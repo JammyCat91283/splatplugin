@@ -186,6 +186,12 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     }
     // Player Shooting Ink
     private void ShootWeapon(Player player, ItemStack item, String weapon) {
+        // if player is not on team, return
+        String team = getPlayerTeam(player);
+        if (team.equalsIgnoreCase("none")) {
+            player.sendMessage(ChatColor.RED + "You must join a team to use this weapon!");
+            return;
+        }
         if (weapon.equals(splatterKey.toString()) || weapon.equals(testWeaponKey.toString())) {
             
 
@@ -238,7 +244,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                     int z = (int) (Math.random() * 3) - 1;
                     Location newLoc = loc.clone().add(x, y, z);
                     
-                    if (newLoc.getBlock().getType() != inkMaterial && newLoc.getBlock().getType() != Material.AIR) {
+                    if (newLoc.getBlock().getType() != inkMaterial && newLoc.getBlock().getType() != Material.AIR && isExposedToAir(newLoc)) {
                         // Save the original block type if not already stored
                         if (!inkStorage.containsKey(newLoc)) {
                             inkStorage.put(newLoc, newLoc.getBlock().getType());
@@ -260,9 +266,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 // Set the block to the ink material
                 loc.getBlock().setType(inkMaterial);
             }
-            getLogger().info("Inked block at " + loc.toString() + " with " + inkMaterial.name() + " using weapon: " + weapon);
         }
-        getLogger().info("Inked block at " + loc.toString() + " with  a " + inkMaterial.name() + " using weapon: " + weapon);
     }
     @EventHandler
     public void onInkHitBlock(ProjectileHitEvent event) {
@@ -274,12 +278,6 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         // debug time 
         
         Player shooter = (Player) inkShot.getShooter();
-        shooter.sendMessage("Ink shot hit block! Custom name: " + inkShot.getCustomName());
-        shooter.sendMessage("splatterInkKey: " + splatterInkKey.toString());
-        // are they the same
-        shooter.sendMessage("Are they the same? " + inkShot.getCustomName().equals(splatterInkKey.toString()));
-        // are they the same? == version
-        shooter.sendMessage("Are they the same? == version: " + (inkShot.getCustomName() == splatterInkKey.toString()));
         // may not always hit a block, so check if hitBlock is null
         if (event.getHitBlock() == null) {
             // handle team fighting
