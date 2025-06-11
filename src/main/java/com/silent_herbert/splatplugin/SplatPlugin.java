@@ -349,6 +349,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             tnt.setFuseTicks(80); // Set fuse duration (80 ticks = 4 seconds)
             tnt.setCustomName("trianglesub");
             tnt.setCustomNameVisible(false);
+            // set the owner so the ink will inking
+            tnt.setSource(player);
             new BukkitRunnable() {
                 int tickCount = 0;
                 int interval = 20; // starting beep interval in ticks
@@ -365,12 +367,13 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                                         Location spawnLoc = tnt.getLocation().clone().add(x, y, z);
                                         Vector direction = spawnLoc.toVector().subtract(tnt.getLocation().toVector());
                                         if (direction.length() != 0) {
-                                            direction.normalize().multiply(1.0f);
+                                            direction.normalize().multiply(0.5f);
                                         }
                                         Snowball ball = tnt.getWorld().spawn(spawnLoc, Snowball.class);
                                         ball.setVelocity(direction);
                                         ball.setCustomName(splatterInkKey.toString());
                                         ball.setCustomNameVisible(false);
+                                        ball.setShooter(tnt.getSource());
                                     }
                                 }
                             }
@@ -380,8 +383,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                         return; // is this?? yes
                     }
                     if (tickCount >= nextBeepTick) {
-                        tnt.getWorld().playSound(tnt.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
-                        interval = Math.max(1, interval - 1);
+                        tnt.getWorld().playSound(tnt.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 5.0f, 1.0f);
+                        interval = interval / 2;
                         nextBeepTick = tickCount + interval;
                     }
                 }
