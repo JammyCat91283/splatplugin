@@ -6,7 +6,7 @@ commands:
   team:
     description: Join a team
     usage: /team <color>
-  givesplatter:
+  giveweapon:
     description: get a weapon
     usage: /giveweapon <weapon>
   clearink:
