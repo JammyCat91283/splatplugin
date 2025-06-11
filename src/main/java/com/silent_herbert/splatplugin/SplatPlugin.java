@@ -212,9 +212,6 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         ItemStack item = player.getInventory().getItemInMainHand();
         // debugging! send isSplatPluginWeapon(item) to player
         String splatterWeapon = isSplatPluginWeapon(item);
-        player.sendMessage(ChatColor.YELLOW + "isSplatPluginWeapon: " + (splatterWeapon != null ? splatterWeapon : "null"));
-        player.sendMessage(ChatColor.YELLOW + "equal to splatterKey: " + (splatterWeapon != null && splatterWeapon.equals(splatterKey.toString())));
-        player.sendMessage(ChatColor.YELLOW + "splatterKey: " + splatterKey.toString());
         // if it didn't return null, then it is a splat plugin weapon
         if (splatterWeapon == null) return;
         ShootWeapon(player, item, splatterWeapon);
@@ -272,8 +269,35 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
 
         if (inkShot.getCustomName() == null || !inkShot.getCustomName().startsWith("splatplugin:")) return;
         if (!(inkShot.getShooter() instanceof Player)) return;
-
+        // debug time 
+        player.sendMessage("Ink shot hit block! Custom name: " + inkShot.getCustomName());
+        player.sendMessage("splatterInkKey: " + splatterInkKey.toString());
         Player shooter = (Player) inkShot.getShooter();
+        // may not always hit a block, so check if hitBlock is null
+        if (event.getHitBlock() == null) {
+            // handle team fighting
+            // if it didn't hit a player then it hit a entity so just boost up the damage and go
+            if (event.getHitEntity() != null && event.getHitEntity() instanceof Player) {
+                Player hitPlayer = (Player) event.getHitEntity();
+                String team = getPlayerTeam(shooter);
+                String hitTeam = getPlayerTeam(hitPlayer);
+                if (!team.equalsIgnoreCase(hitTeam)) {
+                    // do damage to the player
+                    if (inkShot.getCustomName().equals(splatterInkKey.toString())) {
+                        // if the ink shot is a splatter ink, then do damage
+                        hitPlayer.damage(0.625); // 0.625 * 8 = 5.0, which is the damage of the splatter weapon
+                    } else {
+                        // if it's not a splatter ink, just send a message
+                        hitPlayer.damage(5.0); 
+                    }
+                    hitPlayer.sendMessage(ChatColor.RED + "You were hit by " + shooter.getName() + "'s ink!");
+                } else {
+                    // if the player is on the same team, just send a message
+                    event.setCancelled(true);
+                }
+            }
+            return; // If it didn't hit a block, we don't need to do anything else
+        }
         Location hitLoc = event.getHitBlock().getLocation();
         String team = getPlayerTeam(shooter);
 
