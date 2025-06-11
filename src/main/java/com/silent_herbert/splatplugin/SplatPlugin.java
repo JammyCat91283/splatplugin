@@ -373,7 +373,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                                         ball.setVelocity(direction);
                                         ball.setCustomName(splatterInkKey.toString());
                                         ball.setCustomNameVisible(false);
-                                        ball.setShooter(tnt.getSource());
+                                        ball.setShooter((ProjectileSource) tnt.getSource());
                                     }
                                 }
                             }
