@@ -2,6 +2,7 @@ package com.silent_herbert.splatplugin;
 
 import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -39,19 +40,46 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     private final NamespacedKey splatterInkKey = new NamespacedKey(this, "splatterink");
     // splatpluginweapon
     private final NamespacedKey splatPluginWeaponKey = new NamespacedKey(this, "splatpluginweapon");
-    // testweapon 
+    // testweapon
     private final NamespacedKey testWeaponKey = new NamespacedKey(this, "testweapon");
     // inktank
     private final NamespacedKey inkTankKey = new NamespacedKey(this, "inktank");
     // new feature: list
-    // {"splatterweapon":{name:"The Splatter",ink:"splatterink", weapon:Material.BOW,cost:2.5f, damage:5.0f, force:1.0f, cooldown:0.3f, auto:true}, debugweapon:{name:"The Debug Splatter",ink:"splatterink", weapon:Material.BOW,cost:2.5f, damage:5.0f, force:1.0f, cooldown:0.3f, auto:true},"examplesubweapon":{name:"Example Sub Weapon",ink:"subweaponink", weapon:Material.TNT,cost:1.0f, damage:10.0f, force:3.0f, cooldown:3.0f, auto:false}}
-    
+    // {"splatterweapon":{name:"The Splatter",ink:"splatterink",
+    // weapon:Material.BOW,cost:2.5f, damage:5.0f, force:1.0f, cooldown:0.3f,
+    // auto:true}, debugweapon:{name:"The Debug Splatter",ink:"splatterink",
+    // weapon:Material.BOW,cost:2.5f, damage:5.0f, force:1.0f, cooldown:0.3f,
+    // auto:true},"examplesubweapon":{name:"Example Sub Weapon",ink:"subweaponink",
+    // weapon:Material.TNT,cost:1.0f, damage:10.0f, force:3.0f, cooldown:3.0f,
+    // auto:false}}
+    private final Map<String, Map<String, Object>> weaponList = new HashMap<>();
+
+        // Load weapon configurations from the resource file "config.yml".
+        // 
+        // GUIDE: How to add a new weapon:
+        // 1. Open config.yml in the plugin's data folder (created by saveDefaultConfig() in onEnable()).
+        // 2. Under the "weapons" section, add a new weapon entry. For example:
+        // 
+        //    weapons:
+        //      splatterweapon:
+        //        name: "The Splatter"
+        //        ink: "splatterink"
+        //        damage: 5.0
+        //        cost: 2.5
+        //        force: 1.0
+        //        cooldown: 0.3
+        //        auto: true
+        //
+        // 3. Save the file and restart or reload the server and the plugin will load the new weapon automatically.
+        //
+        // Note: Ensure saveDefaultConfig() is called in onEnable() before this code runs.
+        
 
     private final Material[] validWoolColors = {
-        Material.WHITE_WOOL, Material.ORANGE_WOOL, Material.MAGENTA_WOOL, Material.LIGHT_BLUE_WOOL,
-        Material.YELLOW_WOOL, Material.LIME_WOOL, Material.PINK_WOOL, Material.GRAY_WOOL,
-        Material.LIGHT_GRAY_WOOL, Material.CYAN_WOOL, Material.PURPLE_WOOL, Material.BLUE_WOOL,
-        Material.BROWN_WOOL, Material.GREEN_WOOL, Material.RED_WOOL, Material.BLACK_WOOL
+            Material.WHITE_WOOL, Material.ORANGE_WOOL, Material.MAGENTA_WOOL, Material.LIGHT_BLUE_WOOL,
+            Material.YELLOW_WOOL, Material.LIME_WOOL, Material.PINK_WOOL, Material.GRAY_WOOL,
+            Material.LIGHT_GRAY_WOOL, Material.CYAN_WOOL, Material.PURPLE_WOOL, Material.BLUE_WOOL,
+            Material.BROWN_WOOL, Material.GREEN_WOOL, Material.RED_WOOL, Material.BLACK_WOOL
     };
 
     public void setPlayerTeam(Player player, String color) {
@@ -90,11 +118,13 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         }
         return null;
     }
+
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
         getLogger().info("SplatPlugin has been enabled!");
-        // commands (for some reason) just work with onCommand, so we don't need to register them
+        // commands (for some reason) just work with onCommand, so we don't need to
+        // register them
         // prepare the runnable for ink regen for this plugin
         BukkitTask inkRegenTask = new BukkitRunnable() {
             @Override
@@ -102,7 +132,32 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 onInkRegen();
             }
         }.runTaskTimer(this, 0L, 1L); // Run every ticj
+        // stuffffsss
+        if (!getDataFolder().exists() || !new File(getDataFolder(), "config.yml").exists()) {
+            saveDefaultConfig();
+        }
+        saveDefaultConfig();
+        reloadConfig();
+        org.bukkit.configuration.ConfigurationSection weaponsSection = getConfig().getConfigurationSection("weapons");
+        if (weaponsSection != null) {
+            for (String weaponName : weaponsSection.getKeys(false)) {
+                org.bukkit.configuration.ConfigurationSection section = weaponsSection.getConfigurationSection(weaponName);
+                if (section != null) {
+                    Map<String, Object> weaponConfig = new HashMap<>();
+                    weaponConfig.put("damage", section.getDouble("damage"));
+                    weaponConfig.put("ink", section.getString("ink"));
+                    // We cast cost to float if needed, otherwise keep as Double.
+                    weaponConfig.put("cost", (float) section.getDouble("cost"));
+                    // You can add more parameters such as force, cooldown, auto, etc.:
+                    weaponConfig.put("force", (float) section.getDouble("force"));
+                    weaponConfig.put("cooldown", (float) section.getDouble("cooldown"));
+                    weaponConfig.put("auto", section.getBoolean("auto"));
+                    weaponList.put(weaponName, weaponConfig);
+                }
+            }
+        }
     }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
@@ -112,43 +167,39 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
 
         Player player = (Player) sender;
 
-        if (label.equalsIgnoreCase("givesplatter")) {
-            if (!player.getName().equalsIgnoreCase("Silent_Herbert")) {
-                player.sendMessage(ChatColor.RED + "You are not worthy of The Splatter!");
+        // /giveweapon weapon
+        if (label.equalsIgnoreCase("giveweapon")) { 
+            if (args.length < 1) {
+                player.sendMessage(ChatColor.RED + "Usage: /giveweapon <weapon>");
                 return true;
             }
-
-            ItemStack splatterWeapon = new ItemStack(Material.BOW);
-            ItemMeta meta = splatterWeapon.getItemMeta();
-            if (meta != null) {
-                meta.setDisplayName(ChatColor.YELLOW + "The Splatter");
-                meta.setLore(java.util.Collections.singletonList(ChatColor.GRAY + "A powerful ink weapon!"));
-                meta.getPersistentDataContainer().set(splatPluginWeaponKey, PersistentDataType.STRING, splatterKey.toString());
-                splatterWeapon.setItemMeta(meta);
-            }
-
-            player.getInventory().addItem(splatterWeapon);
-            player.sendMessage(ChatColor.GREEN + "You have received " + ChatColor.YELLOW + "The Splatter!");
-            return true;
-        }
-        // /givedebug which gives splatter but weaponkey = "testweapon"
-        if (label.equalsIgnoreCase("givedebug")) {
-            if (!player.getName().equalsIgnoreCase("Silent_Herbert")) {
-                player.sendMessage(ChatColor.RED + "You are not worthy of The Splatter!");
+            String weaponId = args[0].toLowerCase();
+            if (!weaponList.containsKey(weaponId)) {
+                player.sendMessage(ChatColor.RED + "Weapon not found! Check your config.");
                 return true;
             }
-
-            ItemStack splatterWeapon = new ItemStack(Material.BOW);
-            ItemMeta meta = splatterWeapon.getItemMeta();
-            if (meta != null) {
-                meta.setDisplayName(ChatColor.YELLOW + "The Debug Splatter");
-                meta.setLore(java.util.Collections.singletonList(ChatColor.GRAY + "A debug ink weapon!"));
-                meta.getPersistentDataContainer().set(splatPluginWeaponKey, PersistentDataType.STRING, testWeaponKey.toString());
-                splatterWeapon.setItemMeta(meta);
+            Map<String, Object> weaponConfig = weaponList.get(weaponId);
+            Material weaponMaterial = Material.BOW;
+            if (weaponConfig.containsKey("weapon")) {
+                try {
+                    weaponMaterial = Material.valueOf(weaponConfig.get("weapon").toString().toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    // fallback to BOW if material is invalid
+                }
             }
-
-            player.getInventory().addItem(splatterWeapon);
-            player.sendMessage(ChatColor.GREEN + "You have received " + ChatColor.YELLOW + "The Debug Splatter!");
+            ItemStack weaponItem = new ItemStack(weaponMaterial);
+            ItemMeta meta = weaponItem.getItemMeta();
+            if (meta != null) {
+                if (weaponConfig.containsKey("name")) {
+                    meta.setDisplayName(ChatColor.GOLD + weaponConfig.get("name").toString());
+                } else {
+                    meta.setDisplayName(ChatColor.GOLD + weaponId);
+                }
+                meta.getPersistentDataContainer().set(splatPluginWeaponKey, PersistentDataType.STRING, weaponId);
+                weaponItem.setItemMeta(meta);
+            }
+            player.getInventory().addItem(weaponItem);
+            player.sendMessage(ChatColor.GREEN + "You have been given the weapon: " + weaponId);
             return true;
         }
 
@@ -169,8 +220,10 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 tankMeta.setLore(java.util.Arrays.asList(ChatColor.GRAY + "A tank filled with vibrant ink"));
                 tankMeta.setCustomModelData(100); // Custom model data to represent ink storage
 
-                tankMeta.getPersistentDataContainer().set(splatPluginWeaponKey, PersistentDataType.STRING, inkTankKey.toString());
-                tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, 100.0); // Initial ink amount
+                tankMeta.getPersistentDataContainer().set(splatPluginWeaponKey, PersistentDataType.STRING,
+                        inkTankKey.toString());
+                tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, 100.0); // Initial ink
+                                                                                                         // amount
 
                 inkTank.setItemMeta(tankMeta);
             }
@@ -180,22 +233,23 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             return true;
         }
         // /clearink command to clear ink storage and restore original blocks
-            if (label.equalsIgnoreCase("clearink")) {
-                if (inkStorage.isEmpty()) {
-                    player.sendMessage(ChatColor.RED + "No ink to clear!");
-                    return true;
-                }
-                for (Map.Entry<Location, Material> entry : inkStorage.entrySet()) {
-                    Location loc = entry.getKey();
-                    Material originalMaterial = entry.getValue();
-                    if (loc.getBlock().getType() == Material.AIR) continue; // skip air blocks
-                    loc.getBlock().setType(originalMaterial);
-                }
-                player.sendMessage(ChatColor.GREEN + "All ink has been cleared!");
+        if (label.equalsIgnoreCase("clearink")) {
+            if (inkStorage.isEmpty()) {
+                player.sendMessage(ChatColor.RED + "No ink to clear!");
                 return true;
             }
-            return false; // If the command is not recognized, return false to indicate failure
+            for (Map.Entry<Location, Material> entry : inkStorage.entrySet()) {
+                Location loc = entry.getKey();
+                Material originalMaterial = entry.getValue();
+                if (loc.getBlock().getType() == Material.AIR)
+                    continue; // skip air blocks
+                loc.getBlock().setType(originalMaterial);
+            }
+            player.sendMessage(ChatColor.GREEN + "All ink has been cleared!");
+            return true;
         }
+        return false; // If the command is not recognized, return false to indicate failure
+    }
 
     // get command because paper is crying about it returning null
     public PluginCommand getCommand(String name) {
@@ -209,11 +263,13 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         }
         return command;
     }
+
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         player.sendMessage(ChatColor.GREEN + "Welcome to SplatPlugin! Use /team <color> to join a team.");
     }
+
     // Player Shooting Ink
     private void ShootWeapon(Player player, ItemStack item, String weapon) {
         // if player is not on team, return
@@ -225,7 +281,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         // find the tank
         ItemStack inkTank = null;
         for (ItemStack tank : player.getInventory().getContents()) {
-            if (tank != null && tank.getItemMeta() != null && tank.getItemMeta().getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) {
+            if (tank != null && tank.getItemMeta() != null
+                    && tank.getItemMeta().getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) {
                 inkTank = tank;
                 break;
             }
@@ -234,7 +291,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             player.sendMessage(ChatColor.RED + "You need an Ink Tank to use this weapon!");
             return;
         }
-        if (weapon.equals(splatterKey.toString()) || weapon.equals(testWeaponKey.toString())) {
+        if (weapon.equals("splatterweapon") || weapon.equals("debugweapon")) {
             // the cost = 10 for each ink shot
             double cost = 10.0;
             // check if the player has enough ink in the tank
@@ -256,14 +313,16 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank " + (int) inkAmount + "/100");
             inkTank.setItemMeta(tankMeta);
 
-            for (double offsetX : new double[]{-0.01, 0, 0.01}) {
-                for (double offsetY : new double[]{-0.01, 0, 0.01}) {
-                    for (double offsetZ : new double[]{-0.01, 0, 0.01}) {
+            for (double offsetX : new double[] { -0.01, 0, 0.01 }) {
+                for (double offsetY : new double[] { -0.01, 0, 0.01 }) {
+                    for (double offsetZ : new double[] { -0.01, 0, 0.01 }) {
                         Vector direction = player.getLocation().getDirection().clone();
                         double randomOffsetX = (Math.random() * 0.02) - 0.01;
                         double randomOffsetY = (Math.random() * 0.02) - 0.01;
                         double randomOffsetZ = (Math.random() * 0.02) - 0.01;
-                        direction.add(new Vector(offsetX + randomOffsetX, offsetY + randomOffsetY, offsetZ + randomOffsetZ)).normalize().multiply(1.5);
+                        direction.add(
+                                new Vector(offsetX + randomOffsetX, offsetY + randomOffsetY, offsetZ + randomOffsetZ))
+                                .normalize().multiply(1.5);
                         Snowball inkShot = player.launchProjectile(Snowball.class, direction);
                         inkShot.setCustomName(splatterInkKey.toString());
                         inkShot.setCustomNameVisible(false);
@@ -273,9 +332,10 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             }
 
             player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.0f);
-            
+
         }
     }
+
     @EventHandler
     public void onPlayerShootInk(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -283,26 +343,33 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         // debugging! send isSplatPluginWeapon(item) to player
         String splatterWeapon = isSplatPluginWeapon(item);
         // if it didn't return null, then it is a splat plugin weapon
-        if (splatterWeapon == null) return;
+        if (splatterWeapon == null)
+            return;
         ShootWeapon(player, item, splatterWeapon);
         event.setCancelled(true);
     }
+
     private void inkBlock(Location loc, Material inkMaterial, String weapon) {
-        if (loc == null || inkMaterial == null) return;
+        if (loc == null || inkMaterial == null)
+            return;
         // Abort if the block is already air
-        if (loc.getBlock().getType() == Material.AIR) return;
+        if (loc.getBlock().getType() == Material.AIR)
+            return;
         // Save the original block type if not already stored
 
-        // if weapon = splatterKey, then if a ink hits a same team ink block, it will randomly go around until it finds a block that is not inked same.
+        // if weapon = splatterKey, then if a ink hits a same team ink block, it will
+        // randomly go around until it finds a block that is not inked same.
         if (weapon.equals(splatterInkKey.toString())) {
             // Check if the block is already inked with the same color
             if (loc.getBlock().getType() == inkMaterial) {
                 // start searching for a nearby block that is not inked with the same color
-                // but don't go too far, just check for a length of 3 blocks around it (this is called a nerf)
-                // so like this: start from the current location and then do a random move and make count + 1. if count > 3, then restart
+                // but don't go too far, just check for a length of 3 blocks around it (this is
+                // called a nerf)
+                // so like this: start from the current location and then do a random move and
+                // make count + 1. if count > 3, then restart
                 // do this a max of 3 times before giving up
                 int count = 0;
-                
+
                 for (int j = 0; j < 3; j++) {
                     Location newLoc = loc.clone();
                     for (int i = 0; i < 3; i++) {
@@ -310,8 +377,9 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                         int y = (int) (Math.random() * 3) - 1;
                         int z = (int) (Math.random() * 3) - 1;
                         newLoc.add(x, y, z);
-                        
-                        if (newLoc.getBlock().getType() != inkMaterial && newLoc.getBlock().getType() != Material.AIR && isExposedToAir(newLoc)) {
+
+                        if (newLoc.getBlock().getType() != inkMaterial && newLoc.getBlock().getType() != Material.AIR
+                                && isExposedToAir(newLoc)) {
                             if (!inkStorage.containsKey(newLoc)) {
                                 inkStorage.put(newLoc, newLoc.getBlock().getType());
                             }
@@ -333,6 +401,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             }
         }
     }
+
     // here should be good
     // Ink Mechanics (Ink Regen)
     // on tick, regen ink for all players
@@ -340,66 +409,72 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         for (Player player : getServer().getOnlinePlayers()) {
             ItemStack inkTank = null;
             for (ItemStack tank : player.getInventory().getContents()) {
-                if (tank != null && tank.getItemMeta() != null && tank.getItemMeta().getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) {
+                if (tank != null && tank.getItemMeta() != null
+                        && tank.getItemMeta().getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) {
                     inkTank = tank;
                     break;
                 }
             }
-            if (inkTank == null) continue; // No ink tank found, skip this player
+            if (inkTank == null)
+                continue; // No ink tank found, skip this player
 
             ItemMeta tankMeta = inkTank.getItemMeta();
-            if (tankMeta == null || !tankMeta.getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) continue;
+            if (tankMeta == null || !tankMeta.getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE))
+                continue;
 
             double inkAmount = tankMeta.getPersistentDataContainer().get(inkTankKey, PersistentDataType.DOUBLE);
             double regenAmount = 0.25;
             String team = getPlayerTeam(player);
-                Material teamWool = getWoolColor(team);
-                Material below = player.getLocation().add(0, -1, 0).getBlock().getType();
-                if (teamWool != null && below == teamWool) {
-                    regenAmount += 0.25; // Regen faster on same team wool
-                }
-                // if opposing team wool, then no regen (and damage the player)
-                if (teamWool != null && below.toString().endsWith("_WOOL") && !below.equals(teamWool)) {
-                    player.damage(0.5); // Damage the player for being on opposing team wool
-                    regenAmount = 0.0; // Reduce ink amount for being on opposing team wool
-                }
-            if (inkAmount < 100.0) { // Max ink amount is 100
-                // unless on a wool block of same team, then regen faster
-                
-                if (inkAmount > 100.0) inkAmount = 100.0; // Cap at 100
-                if (inkAmount == 100.0) {
-                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-                player.sendMessage(ChatColor.GREEN + "Your Ink Tank is full!");
+            Material teamWool = getWoolColor(team);
+            Material below = player.getLocation().clone().add(0, -1, 0).getBlock().getType();
+            if (teamWool != null && below == teamWool) {
+                regenAmount += 0.25; // Regen faster on same team wool
             }
-                inkAmount += regenAmount;
+            // If stepping on opposing team's wool, damage the player and prevent ink
+            // regeneration
+            if (teamWool != null && below.toString().endsWith("_WOOL") && !below.equals(teamWool)) {
+                player.damage(0.5); // Damage the player for being on opposing team wool
+                regenAmount = 0.0;
+            }
+            if (inkAmount < 100.0) { // Max ink amount is 100
+                inkAmount = Math.min(inkAmount + regenAmount, 100.0);
                 tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, inkAmount);
                 tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank " + (int) inkAmount + "/100");
                 inkTank.setItemMeta(tankMeta);
-                // subtitle on player the hotbar one
-                
+                if (inkAmount == 100.0) {
+                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                    player.sendMessage(ChatColor.GREEN + "Your Ink Tank is full!");
+                }
             }
-            // how do I add the hotbar subtitle?
-            // /title <player> actionbar <message>
+            // Show the ink amount in the hotbar action bar
             player.sendActionBar(ChatColor.AQUA + "Ink Tank: " + (int) inkAmount + "/100");
-            // play sound if ink amount is full
-            
+            // Extra: if the player is sneaking on a same-team wool block, add speed and
+            // invisibility effects
+            if (player.isSneaking() && teamWool != null && below == teamWool) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20, 10));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 20, 0, true, false));
+            }
         }
     }
-    
+
     @EventHandler
     public void onInkHitBlock(ProjectileHitEvent event) {
-        if (!(event.getEntity() instanceof Snowball)) return;
+        if (!(event.getEntity() instanceof Snowball))
+            return;
         Snowball inkShot = (Snowball) event.getEntity();
 
-        if (inkShot.getCustomName() == null || !inkShot.getCustomName().startsWith("splatplugin:")) return;
-        if (!(inkShot.getShooter() instanceof Player)) return;
-        // debug time 
-        
+        if (inkShot.getCustomName() == null || !inkShot.getCustomName().startsWith("splatplugin:"))
+            return;
+        if (!(inkShot.getShooter() instanceof Player))
+            return;
+        // debug time
+
         Player shooter = (Player) inkShot.getShooter();
         // may not always hit a block, so check if hitBlock is null
         if (event.getHitBlock() == null) {
             // handle team fighting
-            // if it didn't hit a player then it hit a entity so just boost up the damage and go
+            // if it didn't hit a player then it hit a entity so just boost up the damage
+            // and go
             if (event.getHitEntity() != null && event.getHitEntity() instanceof Player) {
                 Player hitPlayer = (Player) event.getHitEntity();
                 String team = getPlayerTeam(shooter);
@@ -411,21 +486,24 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                         hitPlayer.damage(0.625); // 0.625 * 8 = 5.0, which is the damage of the splatter weapon
                     } else {
                         // if it's not a splatter ink, just send a message
-                        hitPlayer.damage(5.0); 
+                        hitPlayer.damage(5.0);
                     }
-                    hitPlayer.sendMessage(ChatColor.RED + "You were hit by " + shooter.getName() + "'s ink!");
                 } else {
                     // if the player is on the same team, just send a message
                     event.setCancelled(true);
                 }
+            } else if (event.getHitEntity() != null) {
+                // just do damage
+                
             }
             return; // If it didn't hit a block, we don't need to do anything else
         }
         Location hitLoc = event.getHitBlock().getLocation();
         String team = getPlayerTeam(shooter);
 
-        if (team.equalsIgnoreCase("none")) return;
-        //if (!isExposedToAir(hitLoc)) return;
+        if (team.equalsIgnoreCase("none"))
+            return;
+        // if (!isExposedToAir(hitLoc)) return;
 
         Material inkMaterial = getWoolColor(team);
         inkBlock(hitLoc, inkMaterial, inkShot.getCustomName().toString());
@@ -436,23 +514,27 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
 
     private void spreadInk(Location loc, Material inkMaterial) {
         World world = loc.getWorld();
-        
-        if (world == null || inkMaterial == null) return;
 
-        // loop blocks radius 2 around the hit location 
-        // for each block, check if it's not air and exposed to air then set it to the ink material
-        // don't overwrite existing ink blocks cause that would make the ink spread over ink, permanently erasing the original block
+        if (world == null || inkMaterial == null)
+            return;
+
+        // loop blocks radius 2 around the hit location
+        // for each block, check if it's not air and exposed to air then set it to the
+        // ink material
+        // don't overwrite existing ink blocks cause that would make the ink spread over
+        // ink, permanently erasing the original block
         for (int x = -2; x <= 2; x++) {
             for (int y = -2; y <= 2; y++) {
                 for (int z = -2; z <= 2; z++) {
                     Location newLoc = loc.clone().add(x, y, z);
                     if (newLoc.getBlock().getType() != Material.AIR && isExposedToAir(newLoc)) {
-                        
-                        if (!inkStorage.containsKey(newLoc)) { // get data instead of just type so chests and other blocks can be restored
+
+                        if (!inkStorage.containsKey(newLoc)) { // get data instead of just type so chests and other
+                                                               // blocks can be restored
                             // save data of the original block
-                            
+
                             inkStorage.put(newLoc, newLoc.getBlock().getType());
-                            
+
                         }
                         newLoc.getBlock().setType(inkMaterial);
                     }
@@ -474,12 +556,13 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     private boolean isExposedToAir(Location loc) {
         World world = loc.getWorld();
         return world.getBlockAt(loc.clone().add(1, 0, 0)).getType() == Material.AIR ||
-               world.getBlockAt(loc.clone().add(-1, 0, 0)).getType() == Material.AIR ||
-               world.getBlockAt(loc.clone().add(0, 1, 0)).getType() == Material.AIR ||
-               world.getBlockAt(loc.clone().add(0, -1, 0)).getType() == Material.AIR ||
-               world.getBlockAt(loc.clone().add(0, 0, 1)).getType() == Material.AIR ||
-               world.getBlockAt(loc.clone().add(0, 0, -1)).getType() == Material.AIR;
+                world.getBlockAt(loc.clone().add(-1, 0, 0)).getType() == Material.AIR ||
+                world.getBlockAt(loc.clone().add(0, 1, 0)).getType() == Material.AIR ||
+                world.getBlockAt(loc.clone().add(0, -1, 0)).getType() == Material.AIR ||
+                world.getBlockAt(loc.clone().add(0, 0, 1)).getType() == Material.AIR ||
+                world.getBlockAt(loc.clone().add(0, 0, -1)).getType() == Material.AIR;
     }
+
     // Ink Mechanics (Movement Boosts & Slowdowns)
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
@@ -487,7 +570,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         String team = getPlayerTeam(player);
         Material below = player.getLocation().getBlock().getType();
 
-        if (team.equalsIgnoreCase("none")) return;
+        if (team.equalsIgnoreCase("none"))
+            return;
 
         Material teamWool = getWoolColor(team);
         if (teamWool != null && below == teamWool) {
@@ -505,7 +589,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         String team = getPlayerTeam(player);
         Material below = player.getLocation().getBlock().getType();
 
-        if (team.equalsIgnoreCase("none")) return;
+        if (team.equalsIgnoreCase("none"))
+            return;
 
         Material teamWool = getWoolColor(team);
         if (teamWool != null && below == teamWool) {

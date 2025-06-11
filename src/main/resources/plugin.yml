@@ -7,11 +7,8 @@ commands:
     description: Join a team
     usage: /team <color>
   givesplatter:
-    description: Get The Splatter weapon
-    usage: /givesplatter
+    description: get a weapon
+    usage: /giveweapon <weapon>
   clearink:
     description: Clear all ink from the world
     usage: /clearink
-  givedebug:
-    description: Get the Debug Splatter weapon
-    usage: /givedebug

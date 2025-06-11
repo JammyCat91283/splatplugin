@@ -1,1 +1,30 @@
 # A journey of 1,000 lines starts with a single char
+
+#weapons
+weapons:
+  splatterweapon:
+    name: "The Splatter"
+    ink: "splatterink"
+    damage: 5.0
+    cost: 2.5
+    force: 1.0
+    cooldown: 0.3
+    auto: true
+  debugweapon:
+    name: "The Debugger"
+    ink: "debugink"
+    damage: 1.337
+    cost: 1.338
+    force: 1.339
+    cooldown: 1.340
+    auto: false
+  trianglesub:
+    name: "The Triangle of Doom"
+    ink: "triangleproj"
+    damage: 0.0
+    cost: 40.0
+    force: 2.0
+    cooldown: 5.0
+    auto: false
+    ink2: "triangleink"
+    weapon: "tnt"
