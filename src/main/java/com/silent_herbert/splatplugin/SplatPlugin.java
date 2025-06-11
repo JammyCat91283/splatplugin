@@ -54,26 +54,28 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     // auto:false}}
     private final Map<String, Map<String, Object>> weaponList = new HashMap<>();
 
-        // Load weapon configurations from the resource file "config.yml".
-        // 
-        // GUIDE: How to add a new weapon:
-        // 1. Open config.yml in the plugin's data folder (created by saveDefaultConfig() in onEnable()).
-        // 2. Under the "weapons" section, add a new weapon entry. For example:
-        // 
-        //    weapons:
-        //      splatterweapon:
-        //        name: "The Splatter"
-        //        ink: "splatterink"
-        //        damage: 5.0
-        //        cost: 2.5
-        //        force: 1.0
-        //        cooldown: 0.3
-        //        auto: true
-        //
-        // 3. Save the file and restart or reload the server and the plugin will load the new weapon automatically.
-        //
-        // Note: Ensure saveDefaultConfig() is called in onEnable() before this code runs.
-        
+    // Load weapon configurations from the resource file "config.yml".
+    //
+    // GUIDE: How to add a new weapon:
+    // 1. Open config.yml in the plugin's data folder (created by
+    // saveDefaultConfig() in onEnable()).
+    // 2. Under the "weapons" section, add a new weapon entry. For example:
+    //
+    // weapons:
+    // splatterweapon:
+    // name: "The Splatter"
+    // ink: "splatterink"
+    // damage: 5.0
+    // cost: 2.5
+    // force: 1.0
+    // cooldown: 0.3
+    // auto: true
+    //
+    // 3. Save the file and restart or reload the server and the plugin will load
+    // the new weapon automatically.
+    //
+    // Note: Ensure saveDefaultConfig() is called in onEnable() before this code
+    // runs.
 
     private final Material[] validWoolColors = {
             Material.WHITE_WOOL, Material.ORANGE_WOOL, Material.MAGENTA_WOOL, Material.LIGHT_BLUE_WOOL,
@@ -141,9 +143,11 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         org.bukkit.configuration.ConfigurationSection weaponsSection = getConfig().getConfigurationSection("weapons");
         if (weaponsSection != null) {
             for (String weaponName : weaponsSection.getKeys(false)) {
-                org.bukkit.configuration.ConfigurationSection section = weaponsSection.getConfigurationSection(weaponName);
+                org.bukkit.configuration.ConfigurationSection section = weaponsSection
+                        .getConfigurationSection(weaponName);
                 if (section != null) {
                     Map<String, Object> weaponConfig = new HashMap<>();
+                    weaponConfig.put("name", section(getString("name")));
                     weaponConfig.put("damage", section.getDouble("damage"));
                     weaponConfig.put("ink", section.getString("ink"));
                     // We cast cost to float if needed, otherwise keep as Double.
@@ -173,7 +177,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         Player player = (Player) sender;
 
         // /giveweapon weapon
-        if (label.equalsIgnoreCase("giveweapon")) { 
+        if (label.equalsIgnoreCase("giveweapon")) {
             if (args.length < 1) {
                 player.sendMessage(ChatColor.RED + "Usage: /giveweapon <weapon>");
                 return true;
@@ -277,7 +281,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
 
     // Player Shooting Ink
     private void ShootWeapon(Player player, ItemStack item, String weapon) {
-        // if player is not on team, return
+        // if player is not on a team, return
         String team = getPlayerTeam(player);
         if (team.equalsIgnoreCase("none")) {
             player.sendMessage(ChatColor.RED + "You must join a team to use this weapon!");
@@ -296,28 +300,92 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             player.sendMessage(ChatColor.RED + "You need an Ink Tank to use this weapon!");
             return;
         }
-        if (weapon.equals("splatterweapon") || weapon.equals("debugweapon")) {
-            // the cost = 10 for each ink shot
-            double cost = 10.0;
-            // check if the player has enough ink in the tank
-            ItemMeta tankMeta = inkTank.getItemMeta();
-            if (tankMeta == null || !tankMeta.getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) {
-                player.sendMessage(ChatColor.RED + "Your Ink Tank is empty!");
-                return;
-            }
-            double inkAmount = tankMeta.getPersistentDataContainer().get(inkTankKey, PersistentDataType.DOUBLE);
-            if (inkAmount < cost) {
-                // play a sound
-                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
-                return;
-            }
-            // reduce the ink amount in the tank
-            inkAmount -= cost;
-            tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, inkAmount);
-            // set name
-            tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank " + (int) inkAmount + "/100");
-            inkTank.setItemMeta(tankMeta);
+        // Get the weapon configuration from the config-loaded map
+        Map<String, Object> weaponConfig = weaponList.get(weapon);
+        if (weaponConfig == null) {
+            player.sendMessage(ChatColor.RED + "Weapon configuration not found!");
+            return;
+        }
+        // Retrieve cost and force values from the configuration
+        double cost = 10.0; // default cost
+        if (weaponConfig.containsKey("cost")) {
+            cost = ((Number) weaponConfig.get("cost")).doubleValue();
+        }
+        float force = 1.5f; // default force
+        if (weaponConfig.containsKey("force")) {
+            force = ((Number) weaponConfig.get("force")).floatValue();
+        }
+        string ink = splatterInkKey.toString();
+        if (weaponConfig.containsKey("ink")) {
+            force = ((String) weaponConfig.get("ink"));
+        }
+        // check if the player has enough ink in the tank
+        ItemMeta tankMeta = inkTank.getItemMeta();
+        if (tankMeta == null || !tankMeta.getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) {
+            player.sendMessage(ChatColor.RED + "Your Ink Tank is empty!");
+            return;
+        }
+        double inkAmount = tankMeta.getPersistentDataContainer().get(inkTankKey, PersistentDataType.DOUBLE);
+        if (inkAmount < cost) {
+            // play a sound for insufficient ink
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
+            return;
+        }
+        // reduce the ink amount in the tank and update its display name
+        inkAmount -= cost;
+        tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, inkAmount);
+        tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank " + (int) inkAmount + "/100");
+        inkTank.setItemMeta(tankMeta);
 
+        // Launch ink projectiles according to weapon type
+        if (weapon.equalsIgnoreCase("trianglesub")) {
+            // Trianglesub: Shoot a TNT that travels ~6 blocks away.
+            Vector direction = player.getLocation().getDirection().clone().normalize().multiply(1.5f);
+            // Spawn a primed TNT slightly above the player's location
+            TNTPrimed tnt = player.getWorld().spawn(player.getLocation().add(0, 1, 0), TNTPrimed.class);
+            tnt.setVelocity(direction);
+            tnt.setFuseTicks(80); // Set fuse duration (80 ticks = 4 seconds)
+            tnt.setCustomName("trianglesub");
+            tnt.setCustomNameVisible(false);
+            new BukkitRunnable() {
+                int tickCount = 0;
+                int interval = 20; // starting beep interval in ticks
+                int nextBeepTick = interval;
+
+                @Override
+                public void run() {
+                    tickCount++;
+                    if (tickCount >= tnt.getFuseTicks()) {
+                        for (int x = -3; x <= 3; x++) {
+                            for (int y = -3; y <= 3; y++) {
+                                for (int z = -3; z <= 3; z++) {
+                                    if (Math.sqrt(x * x + y * y + z * z) <= 3) {
+                                        Location spawnLoc = tnt.getLocation().clone().add(x, y, z);
+                                        Vector direction = spawnLoc.toVector().subtract(tnt.getLocation().toVector());
+                                        if (direction.length() != 0) {
+                                            direction.normalize().multiply(1.0f);
+                                        }
+                                        Snowball ball = tnt.getWorld().spawn(spawnLoc, Snowball.class);
+                                        ball.setVelocity(direction);
+                                        ball.setCustomName(splatterInkKey.toString());
+                                        ball.setCustomNameVisible(false);
+                                    }
+                                }
+                            }
+                        }
+                        tnt.remove();
+                        cancel();
+                        return;
+                    }
+                    if (tickCount >= nextBeepTick) {
+                        tnt.getWorld().playSound(tnt.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+                        interval = Math.max(1, interval - 1);
+                        nextBeepTick = tickCount + interval;
+                    }
+                }
+            }.runTaskTimer(SplatPlugin.this, 1L, 1L);
+        } else if (weapon.equalsIgnoreCase("splatterweapon") || weapon.equalsIgnoreCase("debugweapon")) {
+            // Splatter / Debug Weapon: Launch 3x3x3 balls with slight random variations
             for (double offsetX : new double[] { -0.01, 0, 0.01 }) {
                 for (double offsetY : new double[] { -0.01, 0, 0.01 }) {
                     for (double offsetZ : new double[] { -0.01, 0, 0.01 }) {
@@ -325,9 +393,10 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                         double randomOffsetX = (Math.random() * 0.02) - 0.01;
                         double randomOffsetY = (Math.random() * 0.02) - 0.01;
                         double randomOffsetZ = (Math.random() * 0.02) - 0.01;
-                        direction.add(
-                                new Vector(offsetX + randomOffsetX, offsetY + randomOffsetY, offsetZ + randomOffsetZ))
-                                .normalize().multiply(1.5);
+                        direction
+                                .add(new Vector(offsetX + randomOffsetX, offsetY + randomOffsetY,
+                                        offsetZ + randomOffsetZ))
+                                .normalize().multiply(force);
                         Snowball inkShot = player.launchProjectile(Snowball.class, direction);
                         inkShot.setCustomName(splatterInkKey.toString());
                         inkShot.setCustomNameVisible(false);
@@ -335,10 +404,15 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                     }
                 }
             }
-
-            player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.0f);
-
+        } else {
+            // Other weapons: Launch a single projectile
+            Vector direction = player.getLocation().getDirection().clone().normalize().multiply(force);
+            Snowball inkShot = player.launchProjectile(Snowball.class, direction);
+            inkShot.setCustomName(splatterInkKey.toString());
+            inkShot.setCustomNameVisible(false);
+            inkShot.setShooter(player);
         }
+        player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.0f);
     }
 
     @EventHandler
@@ -499,7 +573,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 }
             } else if (event.getHitEntity() != null) {
                 // just do damage
-                
+
             }
             return; // If it didn't hit a block, we don't need to do anything else
         }

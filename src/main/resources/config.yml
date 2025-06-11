@@ -5,8 +5,8 @@ weapons:
   splatterweapon:
     name: "The Splatter"
     ink: "splatterink"
-    damage: 5.0
-    cost: 2.5
+    damage: 0.625 # per bullet
+    cost: 10.0
     force: 1.0
     cooldown: 0.3
     auto: true
