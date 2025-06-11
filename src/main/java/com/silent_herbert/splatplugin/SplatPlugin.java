@@ -33,7 +33,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     private final Map<Location, Material> inkStorage = new HashMap<>();
     private final NamespacedKey splatterKey = new NamespacedKey(this, "splatterweapon");
     // splatplugin-splatterink is the key for the splatter weapon ink
-    private final NamespacedKey splatterInkKey = new NamespacedKey(this, "splatplugin-splatterink");
+    private final NamespacedKey splatterInkKey = new NamespacedKey(this, "splatterink");
     // splatpluginweapon
     private final NamespacedKey splatPluginWeaponKey = new NamespacedKey(this, "splatpluginweapon");
     // testweapon 
@@ -189,9 +189,9 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         if (weapon.equals(splatterKey.toString()) || weapon.equals(testWeaponKey.toString())) {
             
 
-            for (double offsetX : new double[]{-0.5, 0.5}) {
-                for (double offsetY : new double[]{-0.5, 0.5}) {
-                    for (double offsetZ : new double[]{-0.5, 0.5}) {
+            for (double offsetX : new double[]{-0.01, 0.01}) {
+                for (double offsetY : new double[]{-0.01, 0.01}) {
+                    for (double offsetZ : new double[]{-0.01, 0.01}) {
                         Vector direction = player.getLocation().getDirection().clone();
                         direction.add(new Vector(offsetX, offsetY, offsetZ)).normalize().multiply(1.5);
                         Snowball inkShot = player.launchProjectile(Snowball.class, direction);
@@ -270,7 +270,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         if (!(event.getEntity() instanceof Snowball)) return;
         Snowball inkShot = (Snowball) event.getEntity();
 
-        if (inkShot.getCustomName() == null || !inkShot.getCustomName().startsWith("splatplugin-")) return;
+        if (inkShot.getCustomName() == null || !inkShot.getCustomName().startsWith("splatplugin:")) return;
         if (!(inkShot.getShooter() instanceof Player)) return;
 
         Player shooter = (Player) inkShot.getShooter();
