@@ -217,6 +217,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         // debugging! send isSplatPluginWeapon(item) to player
         String splatterWeapon = isSplatPluginWeapon(item);
         player.sendMessage(ChatColor.YELLOW + "isSplatPluginWeapon: " + (splatterWeapon != null ? splatterWeapon : "null"));
+        player.sendMessage(ChatColor.YELLOW + "equal to splatterKey: " + (splatterWeapon != null && splatterWeapon.equals(splatterKey.toString())));
+        player.sendMessage(ChatColor.YELLOW + "equal to testWeaponKey: " + (splatterWeapon != null && splatterWeapon.equals(testWeaponKey.toString())));
         // if it didn't return null, then it is a splat plugin weapon
         if (splatterWeapon == null) return;
         ShootWeapon(player, item, splatterWeapon);
