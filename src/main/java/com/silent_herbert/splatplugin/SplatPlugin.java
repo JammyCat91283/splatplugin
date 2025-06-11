@@ -215,7 +215,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         // find the tank
         ItemStack inkTank = null;
         for (ItemStack tank : player.getInventory().getContents()) {
-            if (tank != null && tank.getItemMeta() != null && tank.getItemMeta().getPersistentDataContainer().has(inkTankKey, PersistentDataType.STRING)) {
+            if (tank != null && tank.getItemMeta() != null && tank.getItemMeta().getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) {
                 inkTank = tank;
                 break;
             }
