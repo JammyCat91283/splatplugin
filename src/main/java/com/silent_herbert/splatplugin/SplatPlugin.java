@@ -190,7 +190,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     }
     // Player Shooting Ink
     private void ShootWeapon(Player player, ItemStack item, String weapon) {
-        if (weapon == "splatterweapon") {
+        if (weapon.equals(splatterKey.toString()) || weapon.equals(testWeaponKey.toString())) {
             
 
             for (double offsetX : new double[]{-0.5, 0.5}) {
