@@ -447,11 +447,11 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 10, 9));
             player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10, 0, true, false));
         } else if (below.toString().endsWith("_WOOL")) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 10, 2));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 10, 2));
         } else {
             player.removePotionEffect(PotionEffectType.SPEED);
             player.removePotionEffect(PotionEffectType.INVISIBILITY);
-            player.removePotionEffect(PotionEffectType.SLOW);
+            player.removePotionEffect(PotionEffectType.SLOWNESS);
         }
     }
 }
