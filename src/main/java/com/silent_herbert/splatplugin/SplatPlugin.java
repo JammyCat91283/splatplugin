@@ -207,7 +207,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             }
 
             player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.0f);
-            event.setCancelled(true);
+            
         }
     }
     @EventHandler
@@ -220,6 +220,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         // if it didn't return null, then it is a splat plugin weapon
         if (splatterWeapon == null) return;
         ShootWeapon(player, item, splatterWeapon);
+        event.setCancelled(true);
     }
     private void inkBlock(Location loc, Material inkMaterial, String weapon) {
         if (loc == null || inkMaterial == null) return;
