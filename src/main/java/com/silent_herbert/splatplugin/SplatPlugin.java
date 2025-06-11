@@ -222,7 +222,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         // Abort if the block is already air
         if (loc.getBlock().getType() == Material.AIR) return;
         // Save the original block type if not already stored
-        
+
         // if weapon = splatterKey, then if a ink hits a same team ink block, it will randomly go around until it finds a block that is not inked same.
         if (weapon.equals(splatterInkKey.toString())) {
             // Check if the block is already inked with the same color
@@ -260,7 +260,9 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 // Set the block to the ink material
                 loc.getBlock().setType(inkMaterial);
             }
+            getLogger().info("Inked block at " + loc.toString() + " with " + inkMaterial.name() + " using weapon: " + weapon);
         }
+        getLogger().info("Inked block at " + loc.toString() + " with  a " + inkMaterial.name() + " using weapon: " + weapon);
     }
     @EventHandler
     public void onInkHitBlock(ProjectileHitEvent event) {
