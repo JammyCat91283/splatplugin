@@ -32,6 +32,7 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 // runnable
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.entity.TNTPrimed;
+import org.bukkit.projectiles.ProjectileSource;
 
 public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor {
 
