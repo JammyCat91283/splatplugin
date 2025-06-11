@@ -38,6 +38,9 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     private final NamespacedKey splatPluginWeaponKey = new NamespacedKey(this, "splatpluginweapon");
     // testweapon 
     private final NamespacedKey testWeaponKey = new NamespacedKey(this, "testweapon");
+    // new feature: list
+    // {"splatterweapon":{name:"The Splatter",ink:"splatterink", weapon:Material.BOW,cost:2.5f, damage:5.0f, force:1.0f, cooldown:0.3f, auto:true}, debugweapon:{name:"The Debug Splatter",ink:"splatterink", weapon:Material.BOW,cost:2.5f, damage:5.0f, force:1.0f, cooldown:0.3f, auto:true},"examplesubweapon":{name:"Example Sub Weapon",ink:"subweaponink", weapon:Material.TNT,cost:1.0f, damage:10.0f, force:3.0f, cooldown:3.0f, auto:false}}
+    
 
     private final Material[] validWoolColors = {
         Material.WHITE_WOOL, Material.ORANGE_WOOL, Material.MAGENTA_WOOL, Material.LIGHT_BLUE_WOOL,
@@ -77,6 +80,10 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         if (meta.getPersistentDataContainer().has(splatPluginWeaponKey, PersistentDataType.STRING)) {
             String weaponType = meta.getPersistentDataContainer().get(splatPluginWeaponKey, PersistentDataType.STRING);
             if (weaponType != null) {
+                // remove the splatplugin: 
+                if (weaponType.startsWith("splatplugin:")) {
+                    weaponType = weaponType.substring("splatplugin:".length());
+                }
                 return weaponType;
             }
         }
