@@ -513,6 +513,13 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             Material below = player.getLocation().clone().add(0, -1, 0).getBlock().getType();
             if (teamWool != null && below == teamWool) {
                 regenAmount += 0.25; // Regen faster on same team wool
+                if (player.isSneaking()) {
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20, 10));
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 20, 0, true, false));
+                } else {
+                    player.removePotionEffect(PotionEffectType.SPEED);
+                    player.removePotionEffect(PotionEffectType.INVISIBILITY);
+                }
             }
             // If stepping on opposing team's wool, damage the player and prevent ink
             // regeneration
@@ -532,12 +539,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             }
             // Show the ink amount in the hotbar action bar
             player.sendActionBar(ChatColor.AQUA + "Ink Tank: " + (int) inkAmount + "/100");
-            // Extra: if the player is sneaking on a same-team wool block, add speed and
-            // invisibility effects
-            if (player.isSneaking() && teamWool != null && below == teamWool) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20, 10));
-                player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 20, 0, true, false));
-            }
+            // moved up go look up there dummy
+
         }
     }
 
