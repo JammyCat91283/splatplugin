@@ -274,6 +274,10 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         Player shooter = (Player) inkShot.getShooter();
         shooter.sendMessage("Ink shot hit block! Custom name: " + inkShot.getCustomName());
         shooter.sendMessage("splatterInkKey: " + splatterInkKey.toString());
+        // are they the same
+        shooter.sendMessage("Are they the same? " + inkShot.getCustomName().equals(splatterInkKey.toString()));
+        // are they the same? == version
+        shooter.sendMessage("Are they the same? == version: " + (inkShot.getCustomName() == splatterInkKey.toString()));
         // may not always hit a block, so check if hitBlock is null
         if (event.getHitBlock() == null) {
             // handle team fighting
