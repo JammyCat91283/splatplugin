@@ -352,13 +352,33 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
 
             double inkAmount = tankMeta.getPersistentDataContainer().get(inkTankKey, PersistentDataType.DOUBLE);
             if (inkAmount < 100.0) { // Max ink amount is 100
-                inkAmount += 0.5; // Regen rate
+                inkAmount += 0.25; // Regen rate
+                // unless on a wool block of same team, then regen faster
+                String team = getPlayerTeam(player);
+                Material teamWool = getWoolColor(team);
+                Material below = player.getLocation().getBlock().getType();
+                if (teamWool != null && below == teamWool) {
+                    inkAmount += 0.25; // Regen faster on same team wool
+                }
+                // if opposing team wool, then no regen (and damage the player)
+                if (teamWool != null && below.toString().endsWith("_WOOL") && !below.equals(teamWool)) {
+                    player.damage(0.5); // Damage the player for being on opposing team wool
+                    inkAmount = 0.0; // Reduce ink amount for being on opposing team wool
+                }
                 if (inkAmount > 100.0) inkAmount = 100.0; // Cap at 100
                 tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, inkAmount);
                 tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank " + (int) inkAmount + "/100");
                 inkTank.setItemMeta(tankMeta);
                 // subtitle on player the hotbar one
-                player.sendTitle("", ChatColor.GREEN + "Ink Tank: " + (int) inkAmount + "/100", 10, 70, 20);
+                
+            }
+            // how do I add the hotbar subtitle?
+            // /title <player> actionbar <message>
+            player.sendActionBar(ChatColor.AQUA + "Ink Tank: " + (int) inkAmount + "/100");
+            // play sound if ink amount is full
+            if (inkAmount == 100.0) {
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                player.sendMessage(ChatColor.GREEN + "Your Ink Tank is full!");
             }
         }
     }
