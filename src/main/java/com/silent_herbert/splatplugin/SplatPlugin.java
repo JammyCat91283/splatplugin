@@ -155,7 +155,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             ItemStack inkTank = new ItemStack(Material.BUCKET);
             ItemMeta tankMeta = inkTank.getItemMeta();
             if (tankMeta != null) {
-                tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank");
+                tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank 100/100");
                 tankMeta.setLore(java.util.Arrays.asList(ChatColor.GRAY + "A tank filled with vibrant ink"));
                 tankMeta.setCustomModelData(100); // Custom model data to represent ink storage
 
@@ -242,6 +242,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             // reduce the ink amount in the tank
             inkAmount -= cost;
             tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, inkAmount);
+            // set name
+            tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank " + (int) inkAmount + "/100");
             inkTank.setItemMeta(tankMeta);
 
             for (double offsetX : new double[]{-0.01, 0, 0.01}) {
@@ -321,6 +323,37 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             }
         }
     }
+    // here should be good
+    // Ink Mechanics (Ink Regen)
+    // on tick, regen ink for all players
+    @EventHandler
+    public void onInkRegen() {
+        for (Player player : getServer().getOnlinePlayers()) {
+            ItemStack inkTank = null;
+            for (ItemStack tank : player.getInventory().getContents()) {
+                if (tank != null && tank.getItemMeta() != null && tank.getItemMeta().getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) {
+                    inkTank = tank;
+                    break;
+                }
+            }
+            if (inkTank == null) continue; // No ink tank found, skip this player
+
+            ItemMeta tankMeta = inkTank.getItemMeta();
+            if (tankMeta == null || !tankMeta.getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) continue;
+
+            double inkAmount = tankMeta.getPersistentDataContainer().get(inkTankKey, PersistentDataType.DOUBLE);
+            if (inkAmount < 100.0) { // Max ink amount is 100
+                inkAmount += 0.5; // Regen rate
+                if (inkAmount > 100.0) inkAmount = 100.0; // Cap at 100
+                tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, inkAmount);
+                tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank " + (int) inkAmount + "/100");
+                inkTank.setItemMeta(tankMeta);
+                // subtitle on player the hotbar one
+                player.sendTitle("", ChatColor.GREEN + "Ink Tank: " + (int) inkAmount + "/100", 10, 70, 20);
+            }
+        }
+    }
+    
     @EventHandler
     public void onInkHitBlock(ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof Snowball)) return;
