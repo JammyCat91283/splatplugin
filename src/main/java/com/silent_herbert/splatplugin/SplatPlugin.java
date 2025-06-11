@@ -310,7 +310,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         //if (!isExposedToAir(hitLoc)) return;
 
         Material inkMaterial = getWoolColor(team);
-        inkBlock(hitLoc, inkMaterial, inkShot.getCustomName());
+        inkBlock(hitLoc, inkMaterial, inkShot.getCustomName().toString());
 
         // spreadInk(hitLoc, inkMaterial); nvm i just had the best idea ever
         hitLoc.getWorld().playSound(hitLoc, Sound.BLOCK_WET_GRASS_PLACE, 1.0f, 1.0f);
