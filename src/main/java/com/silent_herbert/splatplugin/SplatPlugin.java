@@ -366,6 +366,10 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                     inkAmount = 0.0; // Reduce ink amount for being on opposing team wool
                 }
                 if (inkAmount > 100.0) inkAmount = 100.0; // Cap at 100
+                if (inkAmount == 100.0) {
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                player.sendMessage(ChatColor.GREEN + "Your Ink Tank is full!");
+            }
                 tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, inkAmount);
                 tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank " + (int) inkAmount + "/100");
                 inkTank.setItemMeta(tankMeta);
@@ -376,10 +380,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             // /title <player> actionbar <message>
             player.sendActionBar(ChatColor.AQUA + "Ink Tank: " + (int) inkAmount + "/100");
             // play sound if ink amount is full
-            if (inkAmount == 100.0) {
-                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-                player.sendMessage(ChatColor.GREEN + "Your Ink Tank is full!");
-            }
+            
         }
     }
     
