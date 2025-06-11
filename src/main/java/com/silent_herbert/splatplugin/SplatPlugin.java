@@ -28,8 +28,10 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+
 // runnable
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.entity.TNTPrimed;
 
 public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor {
 
@@ -147,7 +149,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                         .getConfigurationSection(weaponName);
                 if (section != null) {
                     Map<String, Object> weaponConfig = new HashMap<>();
-                    weaponConfig.put("name", section(getString("name")));
+                    weaponConfig.put("name", section.getString("name"));
                     weaponConfig.put("damage", section.getDouble("damage"));
                     weaponConfig.put("ink", section.getString("ink"));
                     // We cast cost to float if needed, otherwise keep as Double.
@@ -315,9 +317,9 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         if (weaponConfig.containsKey("force")) {
             force = ((Number) weaponConfig.get("force")).floatValue();
         }
-        string ink = splatterInkKey.toString();
+        String ink = splatterInkKey.toString();
         if (weaponConfig.containsKey("ink")) {
-            force = ((String) weaponConfig.get("ink"));
+            ink = ((String) weaponConfig.get("ink"));
         }
         // check if the player has enough ink in the tank
         ItemMeta tankMeta = inkTank.getItemMeta();
@@ -375,7 +377,7 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                         }
                         tnt.remove();
                         cancel();
-                        return;
+                        return; // is this?? yes
                     }
                     if (tickCount >= nextBeepTick) {
                         tnt.getWorld().playSound(tnt.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
