@@ -188,15 +188,9 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         Player player = event.getPlayer();
         player.sendMessage(ChatColor.GREEN + "Welcome to SplatPlugin! Use /team <color> to join a team.");
     }
-    @EventHandler
-    public void onPlayerShootInk(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        ItemStack item = player.getInventory().getItemInMainHand();
-        // debugging! send isSplatPluginWeapon(item) to player
-        String splatterWeapon = isSplatPluginWeapon(item);
-        player.sendMessage(ChatColor.YELLOW + "isSplatPluginWeapon: " + (splatterWeapon != null ? splatterWeapon : "null"));
-
-        if (isSplatPluginWeapon(item) == splatterKey.toString()) {
+    // Player Shooting Ink
+    private void ShootWeapon(Player player, ItemStack item, String weapon) {
+        if (weapon == "splatterweapon") {
             
 
             for (double offsetX : new double[]{-0.5, 0.5}) {
@@ -215,6 +209,17 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.0f);
             event.setCancelled(true);
         }
+    }
+    @EventHandler
+    public void onPlayerShootInk(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        // debugging! send isSplatPluginWeapon(item) to player
+        String splatterWeapon = isSplatPluginWeapon(item);
+        player.sendMessage(ChatColor.YELLOW + "isSplatPluginWeapon: " + (splatterWeapon != null ? splatterWeapon : "null"));
+        // if it didn't return null, then it is a splat plugin weapon
+        if (splatterWeapon == null) return;
+        ShootWeapon(player, item, splatterWeapon);
     }
     private void inkBlock(Location loc, Material inkMaterial, String weapon) {
         if (loc == null || inkMaterial == null) return;
