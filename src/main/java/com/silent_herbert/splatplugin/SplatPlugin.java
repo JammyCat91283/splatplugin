@@ -351,25 +351,27 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             if (tankMeta == null || !tankMeta.getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) continue;
 
             double inkAmount = tankMeta.getPersistentDataContainer().get(inkTankKey, PersistentDataType.DOUBLE);
-            if (inkAmount < 100.0) { // Max ink amount is 100
-                inkAmount += 0.25; // Regen rate
-                // unless on a wool block of same team, then regen faster
-                String team = getPlayerTeam(player);
+            double regenAmount = 0.25;
+            String team = getPlayerTeam(player);
                 Material teamWool = getWoolColor(team);
-                Material below = player.getLocation().getBlock().getType();
+                Material below = player.getLocation().add(0, -1, 0).getBlock().getType();
                 if (teamWool != null && below == teamWool) {
-                    inkAmount += 0.25; // Regen faster on same team wool
+                    regenAmount += 0.25; // Regen faster on same team wool
                 }
                 // if opposing team wool, then no regen (and damage the player)
                 if (teamWool != null && below.toString().endsWith("_WOOL") && !below.equals(teamWool)) {
                     player.damage(0.5); // Damage the player for being on opposing team wool
-                    inkAmount = 0.0; // Reduce ink amount for being on opposing team wool
+                    regenAmount = 0.0; // Reduce ink amount for being on opposing team wool
                 }
+            if (inkAmount < 100.0) { // Max ink amount is 100
+                // unless on a wool block of same team, then regen faster
+                
                 if (inkAmount > 100.0) inkAmount = 100.0; // Cap at 100
                 if (inkAmount == 100.0) {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
                 player.sendMessage(ChatColor.GREEN + "Your Ink Tank is full!");
             }
+                inkAmount += regenAmount;
                 tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, inkAmount);
                 tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank " + (int) inkAmount + "/100");
                 inkTank.setItemMeta(tankMeta);
