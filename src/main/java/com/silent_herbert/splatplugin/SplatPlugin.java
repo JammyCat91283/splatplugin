@@ -38,6 +38,8 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     private final NamespacedKey splatPluginWeaponKey = new NamespacedKey(this, "splatpluginweapon");
     // testweapon 
     private final NamespacedKey testWeaponKey = new NamespacedKey(this, "testweapon");
+    // inktank
+    private final NamespacedKey inkTankKey = new NamespacedKey(this, "inktank");
     // new feature: list
     // {"splatterweapon":{name:"The Splatter",ink:"splatterink", weapon:Material.BOW,cost:2.5f, damage:5.0f, force:1.0f, cooldown:0.3f, auto:true}, debugweapon:{name:"The Debug Splatter",ink:"splatterink", weapon:Material.BOW,cost:2.5f, damage:5.0f, force:1.0f, cooldown:0.3f, auto:true},"examplesubweapon":{name:"Example Sub Weapon",ink:"subweaponink", weapon:Material.TNT,cost:1.0f, damage:10.0f, force:3.0f, cooldown:3.0f, auto:false}}
     
@@ -145,7 +147,25 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 player.sendMessage(ChatColor.RED + "Usage: /team <color>");
                 return true;
             }
+            // if the player is already have a tank, then remove it
+            if (player.getInventory().containsAtLeast(new ItemStack(Material.BUCKET), 1)) {
+                player.getInventory().removeItem(new ItemStack(Material.BUCKET));
+                player.sendMessage(ChatColor.YELLOW + "Your previous Ink Tank has been removed.");
+            }
+            ItemStack inkTank = new ItemStack(Material.BUCKET);
+            ItemMeta tankMeta = inkTank.getItemMeta();
+            if (tankMeta != null) {
+                tankMeta.setDisplayName(ChatColor.AQUA + "Ink Tank");
+                tankMeta.setLore(java.util.Arrays.asList(ChatColor.GRAY + "A tank filled with vibrant ink"));
+                tankMeta.setCustomModelData(100); // Custom model data to represent ink storage
 
+                tankMeta.getPersistentDataContainer().set(splatPluginWeaponKey, PersistentDataType.STRING, inkTankKey.toString());
+                tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, 100.0); // Initial ink amount
+
+                inkTank.setItemMeta(tankMeta);
+            }
+            player.getInventory().addItem(inkTank);
+            player.sendMessage(ChatColor.GREEN + "Your Ink Tank is ready!");
             setPlayerTeam(player, args[0].toLowerCase());
             return true;
         }
@@ -192,14 +212,46 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
             player.sendMessage(ChatColor.RED + "You must join a team to use this weapon!");
             return;
         }
+        // find the tank
+        ItemStack inkTank = null;
+        for (ItemStack tank : player.getInventory().getContents()) {
+            if (tank != null && tank.getItemMeta() != null && tank.getItemMeta().getPersistentDataContainer().has(inkTankKey, PersistentDataType.STRING)) {
+                inkTank = tank;
+                break;
+            }
+        }
+        if (inkTank == null) {
+            player.sendMessage(ChatColor.RED + "You need an Ink Tank to use this weapon!");
+            return;
+        }
         if (weapon.equals(splatterKey.toString()) || weapon.equals(testWeaponKey.toString())) {
-            
+            // the cost = 10 for each ink shot
+            double cost = 10.0;
+            // check if the player has enough ink in the tank
+            ItemMeta tankMeta = inkTank.getItemMeta();
+            if (tankMeta == null || !tankMeta.getPersistentDataContainer().has(inkTankKey, PersistentDataType.DOUBLE)) {
+                player.sendMessage(ChatColor.RED + "Your Ink Tank is empty!");
+                return;
+            }
+            double inkAmount = tankMeta.getPersistentDataContainer().get(inkTankKey, PersistentDataType.DOUBLE);
+            if (inkAmount < cost) {
+                // play a sound
+                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
+                return;
+            }
+            // reduce the ink amount in the tank
+            inkAmount -= cost;
+            tankMeta.getPersistentDataContainer().set(inkTankKey, PersistentDataType.DOUBLE, inkAmount);
+            inkTank.setItemMeta(tankMeta);
 
-            for (double offsetX : new double[]{-0.01, 0.01}) {
-                for (double offsetY : new double[]{-0.01, 0.01}) {
-                    for (double offsetZ : new double[]{-0.01, 0.01}) {
+            for (double offsetX : new double[]{-0.01, 0, 0.01}) {
+                for (double offsetY : new double[]{-0.01, 0, 0.01}) {
+                    for (double offsetZ : new double[]{-0.01, 0, 0.01}) {
                         Vector direction = player.getLocation().getDirection().clone();
-                        direction.add(new Vector(offsetX, offsetY, offsetZ)).normalize().multiply(1.5);
+                        double randomOffsetX = (Math.random() * 0.02) - 0.01;
+                        double randomOffsetY = (Math.random() * 0.02) - 0.01;
+                        double randomOffsetZ = (Math.random() * 0.02) - 0.01;
+                        direction.add(new Vector(offsetX + randomOffsetX, offsetY + randomOffsetY, offsetZ + randomOffsetZ)).normalize().multiply(1.5);
                         Snowball inkShot = player.launchProjectile(Snowball.class, direction);
                         inkShot.setCustomName(splatterInkKey.toString());
                         inkShot.setCustomNameVisible(false);
@@ -238,22 +290,23 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                 // so like this: start from the current location and then do a random move and make count + 1. if count > 3, then restart
                 // do this a max of 3 times before giving up
                 int count = 0;
-                while (count < 3) {
-                    int x = (int) (Math.random() * 3) - 1; // Randomly choose -1, 0, or 1
-                    int y = (int) (Math.random() * 3) - 1;
-                    int z = (int) (Math.random() * 3) - 1;
-                    Location newLoc = loc.clone().add(x, y, z);
-                    
-                    if (newLoc.getBlock().getType() != inkMaterial && newLoc.getBlock().getType() != Material.AIR && isExposedToAir(newLoc)) {
-                        // Save the original block type if not already stored
-                        if (!inkStorage.containsKey(newLoc)) {
-                            inkStorage.put(newLoc, newLoc.getBlock().getType());
+                
+                for (int j = 0; j < 3; j++) {
+                    Location newLoc = loc.clone();
+                    for (int i = 0; i < 3; i++) {
+                        int x = (int) (Math.random() * 3) - 1; // Randomly choose -1, 0, or 1
+                        int y = (int) (Math.random() * 3) - 1;
+                        int z = (int) (Math.random() * 3) - 1;
+                        newLoc.add(x, y, z);
+                        
+                        if (newLoc.getBlock().getType() != inkMaterial && newLoc.getBlock().getType() != Material.AIR && isExposedToAir(newLoc)) {
+                            if (!inkStorage.containsKey(newLoc)) {
+                                inkStorage.put(newLoc, newLoc.getBlock().getType());
+                            }
+                            newLoc.getBlock().setType(inkMaterial);
+                            return; // Successfully inked a new block
                         }
-                        // Set the block to the ink material
-                        newLoc.getBlock().setType(inkMaterial);
-                        return; // Exit after successfully inking a different block
                     }
-                    count++;
                 }
                 // If we reach here, it means we couldn't find a suitable block to ink
                 loc.getBlock().setType(inkMaterial); // Fallback to inking the original block
@@ -388,12 +441,17 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         Material below = player.getLocation().getBlock().getType();
 
         if (team.equalsIgnoreCase("none")) return;
-        if (!event.isSneaking()) return;
 
         Material teamWool = getWoolColor(team);
         if (teamWool != null && below == teamWool) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 10, 9));
             player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10, 0, true, false));
+        } else if (below.toString().endsWith("_WOOL")) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 10, 2));
+        } else {
+            player.removePotionEffect(PotionEffectType.SPEED);
+            player.removePotionEffect(PotionEffectType.INVISIBILITY);
+            player.removePotionEffect(PotionEffectType.SLOW);
         }
     }
 }
