@@ -21,11 +21,14 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.HashMap;
 import java.util.Map;
 import org.bukkit.util.Vector;
+import org.bukkit.scheduler.BukkitTask;
 // plugin command
 import org.bukkit.command.PluginCommand;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+// runnable
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor {
 
@@ -92,6 +95,13 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         getServer().getPluginManager().registerEvents(this, this);
         getLogger().info("SplatPlugin has been enabled!");
         // commands (for some reason) just work with onCommand, so we don't need to register them
+        // prepare the runnable for ink regen for this plugin
+        BukkitTask inkRegenTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                onInkRegen();
+            }
+        }.runTaskTimer(this, 0L, 1L); // Run every ticj
     }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -326,7 +336,6 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
     // here should be good
     // Ink Mechanics (Ink Regen)
     // on tick, regen ink for all players
-    @EventHandler
     public void onInkRegen() {
         for (Player player : getServer().getOnlinePlayers()) {
             ItemStack inkTank = null;
