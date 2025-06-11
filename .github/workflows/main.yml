@@ -17,15 +17,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  test:
-    name: Run unit tests
-    strategy:
-      matrix:
-        os: [ ubuntu-latest ]
-        java: [ 21 ]
-    runs-on: ${{ matrix.os }}
+  release:
+    runs-on: ubuntu-latest
     permissions:
       contents: write
+    needs:
+      - test
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,23 +30,16 @@ jobs:
       - name: Common Setup
         uses: ./.github/actions/common-setup
         with:
-          java-version: ${{ matrix.java }}
+          java-version: 21
 
-      - name: Build with Gradle
-        run: ./gradlew build --info
+      - name: Publish with Gradle
+        run: ./gradlew -Pver="0.0.0-RC-1" release
 
       - name: Upload build results
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }} Java ${{ matrix.java }} build results
+          name: Release Build
           path: ${{ github.workspace }}/build/libs/
-
-      - name: Upload test results
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.os }} Java ${{ matrix.java }} test results
-          path: ${{ github.workspace }}/build/reports/
 
   notify:
     name: Send job complete notification
