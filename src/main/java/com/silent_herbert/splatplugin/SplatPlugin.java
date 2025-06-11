@@ -80,10 +80,6 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
         if (meta.getPersistentDataContainer().has(splatPluginWeaponKey, PersistentDataType.STRING)) {
             String weaponType = meta.getPersistentDataContainer().get(splatPluginWeaponKey, PersistentDataType.STRING);
             if (weaponType != null) {
-                // remove the splatplugin: 
-                if (weaponType.startsWith("splatplugin:")) {
-                    weaponType = weaponType.substring("splatplugin:".length());
-                }
                 return weaponType;
             }
         }
