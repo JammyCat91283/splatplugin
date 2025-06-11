@@ -18,7 +18,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import org.bukkit.util.Vector;
@@ -152,6 +152,11 @@ public class SplatPlugin extends JavaPlugin implements Listener, CommandExecutor
                     weaponConfig.put("force", (float) section.getDouble("force"));
                     weaponConfig.put("cooldown", (float) section.getDouble("cooldown"));
                     weaponConfig.put("auto", section.getBoolean("auto"));
+                    if (section.contains("weapon")) {
+                        weaponConfig.put("weapon", section.getString("weapon"));
+                    } else {
+                        weaponConfig.put("weapon", "BOW");
+                    }
                     weaponList.put(weaponName, weaponConfig);
                 }
             }
