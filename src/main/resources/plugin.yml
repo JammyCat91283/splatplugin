@@ -1,7 +1,9 @@
 name: SplatPlugin
 main: com.silent_herbert.splatplugin.SplatPlugin
-version: 1.5
+version: 1.21
 api-version: 1.20
+depend:
+  - WorldEdit # <--- THIS IS THE CORRECT FORMAT
 commands:
   team:
     description: Join a team
@@ -12,3 +14,15 @@ commands:
   clearink:
     description: Clear all ink from the world
     usage: /clearink
+  splatrule:
+    description: gongule
+    usage: /splatrule
+  clearinkteam:
+    description: Clear all ink from the world but only your teams ink
+    usage: /clearinkteam
+  countink:
+    description: use worldedit
+    usage: /countink
+  game:
+    description: :)
+    usage: /game

@@ -2,14 +2,15 @@
 
 #weapons
 weapons:
-  splatterweapon:
-    name: "The Splatter"
+  splattershot:
+    name: "SplatterShot"
     ink: "splatterink"
-    damage: 0.625 # per bullet
+    damage: 8 # per bullet
     cost: 10.0
     force: 1.0
     cooldown: 0.3
     auto: true
+    type: "weapon"
   debugweapon:
     name: "The Debugger"
     ink: "debugink"
@@ -18,13 +19,95 @@ weapons:
     force: 1.339
     cooldown: 1.340
     auto: false
-  trianglesub:
-    name: "The Triangle of Doom"
-    ink: "triangleproj"
-    damage: 0.0
+    type: "weapon"
+    hidden: true
+  splatbomb:
+    name: "SplatBomb"
+    ink: "triangleink"
+    damage: 13.0
     cost: 40.0
     force: 2.0
     cooldown: 5.0
     auto: false
-    ink2: "triangleink"
     weapon: "tnt"
+    type: "bomb"
+  inkbrush:
+    name: "Inkbrush"
+    ink: "brushink"
+    damage: 3.0
+    cost: 5.0
+    force: 2.0
+    cooldown: 7L
+    auto: true
+    weapon: "brush"
+    type: "weapon"
+  defaultblaster:
+    name: "Blaster"
+    ink: "blasterink"
+    damage: 8.0
+    cost: 15.0
+    force: 3.0
+    cooldown: 3.0
+    auto: false
+    weapon: crossbow
+    type: "weapon"
+  splatterscope:
+    name: "SplatterScope"
+    ink: "scopeink"
+    damage: 13.0
+    cost: 20.0
+    force: 3.0
+    cooldown: 1.0
+    auto: false
+    weapon: crossbow
+    type: "weapon"
+  suctionbomb:
+    name: "Suction Bomb"
+    ink: "suctionink"
+    damage: 13.0
+    cost: 40.0
+    force: 2.0
+    cooldown: 5.0
+    auto: false
+    weapon: "tnt"
+    type: "bomb"
+  burstbomb:
+    name: "Burst Bomb"
+    ink: "burstink"
+    damage: 7.0
+    cost: 40.0
+    force: 2.0
+    cooldown: 5.0
+    auto: false
+    weapon: "experience_bottle"
+    type: "bomb"
+  splatroller:
+    name: "Splat Roller"
+    ink: "rollerink"
+    damage: 5.0
+    cost: 8.0
+    force: 2.0
+    cooldown: 1.0
+    auto: true
+    weapon: "iron_pickaxe"
+  # add ink sprinkler later
+  inksprinkler:
+    name: "Ink Sprinkler"
+    ink: "sprinklerink"
+    damage: 5.0
+    cost: 10.0
+    force: 1.0
+    cooldown: 1.0
+    auto: true
+    weapon: "iron_ingot"
+    type: "bomb"
+  nuclearbomb:
+    name: "Nuclear Bomb"
+    ink: "nuclearink"
+    damage: 10000.0
+    cost: 100.0
+    force: 1.0
+    cooldown: 10000.0
+    auto: false
+    weapon: "tnt"
+    type: "bomb"

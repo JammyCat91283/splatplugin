@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.silent_herbert.splatplugin"
-version = "1.1.0-SNAPSHOT"
+version = "1.6.0"
 
 static def getTime() {
     SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd-HHmm")
@@ -59,16 +59,17 @@ repositories {
             includeModule("com.mojang", "brigadier")
         }
     }
+    maven { url 'https://maven.enginehub.org/repo/' }
 
     mavenCentral()
 }
-
 dependencies {
     compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
     implementation 'io.papermc:paperlib:1.0.8'
     testImplementation 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.13.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.13.0'
+    compileOnly 'com.sk89q.worldedit:worldedit-bukkit:7.3.14'
 }
 
 test {
@@ -110,5 +111,16 @@ tasks.register('release') {
                     .renameTo(layout.buildDirectory.get().toString() + File.separator + 'libs' + File.separator
                             + rootProject.name + '.jar')
         }
+        def pluginDir = file("${projectDir}/../temp_mc/plugins")
+        if (!pluginDir.exists()) {
+            pluginDir.mkdirs()
+        }
+        pluginDir.eachFile { file ->
+            if (file.name.startsWith("Sokatch")) {
+                file.delete()
+            }
+        }
+        def jarFile = file("${layout.buildDirectory.get()}/libs/${rootProject.name}.jar")
+        jarFile.renameTo(new File(pluginDir, "${rootProject.name}.jar"))
     }
 }
